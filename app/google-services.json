@@ -1,0 +1,50 @@
+{
+  "project_info": {
+    "project_number": "168321657613",
+    "firebase_url": "https://tmark0.firebaseio.com",
+    "project_id": "tmark0",
+    "storage_bucket": "tmark0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168321657613:android:8185f973576ecd28",
+        "android_client_info": {
+          "package_name": "com.trackkers.tmark"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "168321657613-icfqo9sg1kcp7uuh67sfgq4evnvb5ktg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.trackkers.tmark",
+            "certificate_hash": "f9ef035b08a4a25b0583ac8bebdecbafc00840f3"
+          }
+        },
+        {
+          "client_id": "168321657613-0oggpkm828cs68beuru55iro5nl09ahv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkmXjvKNSzUoEJ9APASUwmL1xF1P0lkL8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

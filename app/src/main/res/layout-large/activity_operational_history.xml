@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_operations_history"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".views.activity.operations.OperationalHistory">
+
+
+    <include layout="@layout/toolbar_layout" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/dp_10"
+        android:layout_marginStart="@dimen/dp_10"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:weightSum="1">
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:id="@+id/tv_selected_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/dp_08"
+            android:layout_weight=".6"
+            android:background="@drawable/rect_border_textview"
+            android:gravity="center"
+            android:padding="@dimen/dp_10"
+            android:textColor="@color/colorBlack"
+            android:textSize="@dimen/sp_18"
+            android:textStyle="bold" />
+
+        <com.trackkers.tmark.customviews.MyButton
+            android:id="@+id/btn_history_search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/dp_10"
+            android:layout_weight=".4"
+            android:background="@drawable/gradient_rect_button"
+            android:text="@string/search"
+            android:textColor="@color/colorWhite" />
+
+    </LinearLayout>
+
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="@dimen/dp_10"
+        android:text="@string/checkin_history"
+        android:textColor="@color/colorPrimary"
+        android:textSize="@dimen/sp_20"
+        android:textStyle="bold|italic" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_checkin_history"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:id="@+id/empty_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="@string/no_scanned_history_found_on_this_selected_date"
+        android:textColor="@color/colorPrimary"
+        android:textSize="@dimen/sp_20"
+        android:textStyle="bold|italic"
+        android:visibility="gone" />
+
+
+</LinearLayout>

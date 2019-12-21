@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_add_guard"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".views.activity.fieldofficer.AddNewGuard">
+
+
+    <include layout="@layout/toolbar_layout" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true">
+
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="@dimen/dp_20">
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Select guard type"
+                android:textColor="@color/colorOrange"
+                android:textSize="@dimen/sp_20"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rg_guard_type"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="1"
+                android:layout_marginTop="@dimen/dp_15">
+
+                <RadioButton
+                    android:id="@+id/rb_guard"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Guard"
+                    android:checked="true"
+                    android:layout_weight=".4"
+                    android:buttonTint="@color/colorPrimary"/>
+
+                <RadioButton
+                    android:id="@+id/rb_guard_only"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Guards (Operational)"
+                    android:layout_weight=".6"
+                    android:buttonTint="@color/colorPrimary"/>
+
+            </RadioGroup>
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Guard Information"
+                android:textColor="@color/colorOrange"
+                android:textSize="@dimen/sp_20"
+                android:textStyle="bold"
+                android:layout_marginTop="@dimen/dp_30"/>
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dp_10"
+                android:text="Employee Code"
+                android:textColor="@color/colorBlack"
+                android:textSize="@dimen/sp_18"
+                android:textStyle="bold" />
+
+            <com.trackkers.tmark.customviews.MyEdittext
+                android:id="@+id/et_emp_code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/colorPrimary"
+                android:textSize="@dimen/sp_16"
+                android:textStyle="bold"
+                android:theme="@style/MyEditTextTheme" />
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dp_05"
+                android:text="Guard Name"
+                android:textColor="@color/colorBlack"
+                android:textSize="@dimen/sp_18"
+                android:textStyle="bold" />
+
+            <com.trackkers.tmark.customviews.MyEdittext
+                android:id="@+id/et_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/colorPrimary"
+                android:textSize="@dimen/sp_16"
+                android:textStyle="bold"
+                android:theme="@style/MyEditTextTheme" />
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dp_05"
+                android:text="Guard Mobile Number"
+                android:textColor="@color/colorBlack"
+                android:textSize="@dimen/sp_18"
+                android:textStyle="bold" />
+
+            <com.trackkers.tmark.customviews.MyEdittext
+                android:id="@+id/et_mobile_number"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLines="1"
+                android:textColor="@color/colorPrimary"
+                android:textSize="@dimen/sp_16"
+                android:textStyle="bold"
+                android:theme="@style/MyEditTextTheme" />
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dp_05"
+                android:text="Guard Address"
+                android:textColor="@color/colorBlack"
+                android:textSize="@dimen/sp_18"
+                android:textStyle="bold" />
+
+            <com.trackkers.tmark.customviews.MyEdittext
+                android:id="@+id/et_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/colorPrimary"
+                android:textSize="@dimen/sp_16"
+                android:textStyle="bold"
+                android:theme="@style/MyEditTextTheme" />
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dp_05"
+                android:text="Password"
+                android:textColor="@color/colorBlack"
+                android:textSize="@dimen/sp_18"
+                android:textStyle="bold" />
+
+            <com.trackkers.tmark.customviews.MyEdittext
+                android:id="@+id/et_pass"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/colorPrimary"
+                android:textSize="@dimen/sp_18"
+                android:textStyle="bold"
+                android:drawableEnd="@drawable/ic_remove_red_eye_black_24dp"
+                android:theme="@style/MyEditTextTheme" />
+
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dp_30"
+                android:text="Enable Tracking"
+                android:textColor="@color/colorOrange"
+                android:textSize="@dimen/sp_20"
+                android:textStyle="bold" />
+
+
+            <CheckBox
+                android:id="@+id/cb_live_tracking"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dp_10"
+                android:buttonTint="@color/colorPrimary"
+                android:text="Live Tracking"
+                android:textColor="@color/colorBlack"
+                android:textSize="@dimen/sp_18"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_add_guard"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="@dimen/dp_30"
+                android:background="@drawable/selector_button"
+                android:paddingEnd="@dimen/dp_30"
+                android:paddingStart="@dimen/dp_30"
+                android:text="Add guard"
+                android:textColor="@color/colorWhite" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+
+</LinearLayout>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/root_guard_sleeping">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/i_m_guarding_the_route"
+        android:textColor="@color/colorBlack"
+        android:gravity="center"
+        android:layout_marginTop="@dimen/dp_10"
+        android:layout_marginBottom="@dimen/dp_10"
+        android:textSize="@dimen/sp_30"/>
+
+    <TextView
+        android:id="@+id/tv_alarm_for"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/alarm_for"
+        android:textColor="@color/colorBlack"
+        android:gravity="center"
+        android:layout_marginTop="@dimen/dp_05"
+        android:layout_marginBottom="@dimen/dp_05"
+        android:textSize="@dimen/sp_15"/>
+
+    <ImageView
+        android:id="@+id/gif1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:src="@drawable/guard_sleeping_pic"
+        android:layout_weight="1"/>
+
+    <Button
+        android:id="@+id/btn_not_sleeping"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/gradient_rect_button"
+        android:text="@string/i_m_not_sleeping"
+        android:padding="@dimen/dp_10"
+        android:textColor="@color/colorWhite"
+        android:layout_gravity="center"
+        android:layout_margin="@dimen/dp_10" />
+
+</LinearLayout>

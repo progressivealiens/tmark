@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:id="@+id/root_assign_guard"
+    tools:context=".views.activity.fieldofficer.AssignGuardFromRoute">
+
+    <include layout="@layout/toolbar_layout"/>
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/select_guard_to_assign_to_route"
+        android:textStyle="bold"
+        android:textSize="@dimen/sp_18"
+        android:textColor="@color/colorBlack"
+        android:layout_marginTop="@dimen/dp_10"/>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="1"
+        android:layout_marginStart="@dimen/dp_10"
+        android:layout_marginEnd="@dimen/dp_10"
+        android:layout_marginTop="@dimen/dp_20"
+        android:gravity="center">
+
+
+        <com.trackkers.tmark.customviews.customSpinner
+            android:id="@+id/spinner_guards"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight=".6"
+            android:layout_marginEnd="@dimen/dp_10"/>
+
+
+        <Button
+            android:id="@+id/btn_assign_guard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/assign_guard"
+            android:textAllCaps="false"
+            android:textColor="@drawable/text_selector"
+            android:background="@drawable/selector_button"
+            android:layout_weight=".4"
+            android:layout_marginStart="@dimen/dp_10"/>
+
+    </LinearLayout>
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:id="@+id/tv_route_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/dp_10"
+        android:layout_marginEnd="@dimen/dp_10"
+        android:layout_marginTop="@dimen/dp_30"
+        android:textSize="@dimen/sp_18"
+        android:textColor="@color/colorPrimary"
+        android:textStyle="bold"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="1"
+        android:layout_marginStart="@dimen/dp_10"
+        android:layout_marginEnd="@dimen/dp_10"
+        android:layout_marginTop="@dimen/dp_15"
+        android:layout_marginBottom="@dimen/dp_15"
+        android:gravity="center">
+
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight=".6"
+            android:text="@string/guard_name"
+            android:textStyle="bold"
+            android:textColor="@color/colorBlack"
+            android:textSize="@dimen/sp_16"
+            android:layout_marginEnd="@dimen/dp_10" />
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/unassign_guard"
+            android:textColor="@color/colorBlack"
+            android:gravity="center"
+            android:textSize="@dimen/sp_16"
+            android:textStyle="bold"
+            android:layout_weight=".4"
+            android:layout_marginStart="@dimen/dp_10" />
+
+    </LinearLayout>
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_assigned_guard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+
+
+</LinearLayout>

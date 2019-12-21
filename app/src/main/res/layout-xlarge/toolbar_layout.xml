@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/toolbar"
+    android:layout_width="match_parent"
+    android:layout_height="?android:actionBarSize"
+    android:background="@color/colorPrimary"
+    android:theme="@style/ToolbarStyle"
+    app:contentInsetLeft="0dp"
+    app:contentInsetStart="0dp"
+    app:contentInsetStartWithNavigation="0dp"
+    app:subtitleTextColor="@color/colorWhite"
+    app:titleTextAppearance="@style/ToolbarStyle"
+    app:titleTextColor="@color/colorWhite">
+
+    <LinearLayout
+        android:id="@+id/lin_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:visibility="visible">
+
+        <ImageView
+            android:id="@+id/iv_back"
+            android:layout_width="@dimen/dp_40"
+            android:layout_height="@dimen/dp_40"
+            android:layout_gravity="center"
+            android:layout_marginStart="@dimen/dp_10"
+            android:src="@drawable/ic_arrow_back_white_24dp"
+            android:visibility="gone"
+            android:contentDescription="@string/image"/>
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:id="@+id/tv_title"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="start|center"
+            android:paddingEnd="@dimen/dp_15"
+            android:paddingStart="@dimen/dp_15"
+            android:textColor="@color/colorWhite"
+            android:textSize="@dimen/sp_20"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:id="@+id/tv_subtitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/rect_round_textview_white"
+            android:layout_gravity="center"
+            android:gravity="center|end"
+            android:paddingStart="@dimen/dp_15"
+            android:paddingEnd="@dimen/dp_15"
+            android:paddingTop="@dimen/dp_08"
+            android:paddingBottom="@dimen/dp_08"
+            android:textColor="@color/colorWhite"
+            android:textSize="@dimen/sp_15"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:ignore="RtlSymmetry" />
+
+    </LinearLayout>
+
+</androidx.appcompat.widget.Toolbar>

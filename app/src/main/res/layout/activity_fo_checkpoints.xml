@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:id="@+id/root_checkpoints">
+
+    <include layout="@layout/toolbar_layout" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:nestedScrollingEnabled="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:focusable="false"
+            android:focusableInTouchMode="true">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="1">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_weight=".4">
+
+                    <com.trackkers.tmark.customviews.MyTextview
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="@dimen/dp_10"
+                        android:text="@string/site_address"
+                        android:textColor="@color/colorBlack"
+                        android:textSize="@dimen/sp_20"
+                        android:textStyle="bold" />
+
+                    <com.trackkers.tmark.customviews.MyTextview
+                        android:id="@+id/tv_site_address"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingBottom="@dimen/dp_05"
+                        android:paddingEnd="@dimen/dp_10"
+                        android:paddingStart="@dimen/dp_10"
+                        android:paddingTop="@dimen/dp_05"
+                        android:textColor="@color/colorBlack"
+                        android:textStyle="bold" />
+
+                    <com.trackkers.tmark.customviews.MyTextview
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="@dimen/dp_10"
+                        android:text="@string/route_start_address"
+                        android:textColor="@color/colorBlack"
+                        android:textSize="@dimen/sp_20"
+                        android:textStyle="bold" />
+
+                    <com.trackkers.tmark.customviews.MyTextview
+                        android:id="@+id/tv_route_start_address"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingBottom="@dimen/dp_05"
+                        android:paddingEnd="@dimen/dp_10"
+                        android:paddingStart="@dimen/dp_10"
+                        android:paddingTop="@dimen/dp_05"
+                        android:textColor="@color/colorBlack"
+                        android:textStyle="bold" />
+
+                    <com.trackkers.tmark.customviews.MyTextview
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="@dimen/dp_10"
+                        android:text="@string/route_end_address"
+                        android:textColor="@color/colorBlack"
+                        android:textSize="@dimen/sp_20"
+                        android:textStyle="bold" />
+
+                    <com.trackkers.tmark.customviews.MyTextview
+                        android:id="@+id/tv_route_end_address"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingBottom="@dimen/dp_05"
+                        android:paddingEnd="@dimen/dp_10"
+                        android:paddingStart="@dimen/dp_10"
+                        android:paddingTop="@dimen/dp_05"
+                        android:textColor="@color/colorBlack"
+                        android:textStyle="bold" />
+
+
+                </LinearLayout>
+
+                <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:id="@+id/map"
+                    android:name="com.google.android.gms.maps.SupportMapFragment"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight=".6" />
+
+
+            </LinearLayout>
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/please_maintain_the_minimum_25_30_meters_distance_between_two_checkpoints"
+                android:paddingStart="@dimen/dp_10"
+                android:paddingEnd="@dimen/dp_10"
+                android:textColor="@color/colorRed"
+                android:textStyle="bold"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2.9">
+
+
+                <com.trackkers.tmark.customviews.MyTextview
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".6"
+                    android:padding="@dimen/dp_10"
+                    android:text="@string/order_no"
+                    android:textColor="@color/colorPrimary"
+                    android:textStyle="bold" />
+
+                <com.trackkers.tmark.customviews.MyTextview
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/dp_10"
+                    android:text="@string/check_point_name"
+                    android:textColor="@color/colorPrimary"
+                    android:textStyle="bold" />
+
+                <com.trackkers.tmark.customviews.MyTextview
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".7"
+                    android:gravity="center"
+                    android:padding="@dimen/dp_10"
+                    android:text="@string/assigned_n_to_me"
+                    android:textColor="@color/colorPrimary"
+                    android:textStyle="bold" />
+
+                <com.trackkers.tmark.customviews.MyTextview
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".6"
+                    android:padding="@dimen/dp_10"
+                    android:text="@string/verified"
+                    android:textColor="@color/colorPrimary"
+                    android:textStyle="bold" />
+
+
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_fo_checkpoints"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="@dimen/dp_10" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

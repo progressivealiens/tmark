@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:weightSum="1">
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="center"
+        android:layout_weight=".3"
+        android:gravity="center"
+        android:text="@string/attendance_at_fingertip"
+        android:textColor="@color/colorBlack"
+        android:textSize="@dimen/sp_20"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/iv_logo"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight=".4"
+        android:layout_gravity="center"
+        android:contentDescription="@string/image"
+        android:src="@drawable/t_mark_logo_final" />
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/tmark"
+        android:textColor="@color/colorBlack"
+        android:textSize="@dimen/sp_30"
+        android:textStyle="bold" />
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginBottom="@dimen/dp_10"
+        android:layout_weight=".3"
+        android:gravity="center|bottom"
+        android:text="@string/powered_by_trackkers_com"
+        android:textColor="@color/colorBlack"
+        android:textSize="@dimen/sp_20"
+        android:textStyle="bold" />
+
+</LinearLayout>
