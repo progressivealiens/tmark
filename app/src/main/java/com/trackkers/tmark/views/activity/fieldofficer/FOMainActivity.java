@@ -30,6 +30,7 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.navigation.NavigationView;
+import com.makeramen.roundedimageview.RoundedImageView;
 import com.squareup.picasso.Picasso;
 import com.trackkers.tmark.R;
 import com.trackkers.tmark.customviews.CustomTypefaceSpan;
@@ -55,8 +56,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 
-public class FOMainActivity extends AppCompatActivity implements
-        NavigationView.OnNavigationItemSelectedListener {
+public class FOMainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     @BindView(R.id.toolbar)
     Toolbar toolbar;
@@ -78,12 +78,15 @@ public class FOMainActivity extends AppCompatActivity implements
     CardView cardAssignUnassignGuard;
     @BindView(R.id.card_site_details)
     CardView cardSiteDetails;
+    @BindView(R.id.card_view_documents)
+    CardView cardViewDocuments;
     @BindView(R.id.iv_company_logo)
-    ImageView ivCompanyLogo;
+    RoundedImageView ivCompanyLogo;
     @BindView(R.id.switch_language)
     SwitchCompat switchLanguage;
     @BindView(R.id.tv_welcome)
     MyTextview tvWelcome;
+
 
     PrefData prefData;
     ApiInterface apiInterface;
@@ -128,7 +131,6 @@ public class FOMainActivity extends AppCompatActivity implements
             }
             applyFontToMenuItem(mi);
         }
-
     }
 
     private void applyFontToMenuItem(MenuItem mi) {
@@ -195,7 +197,14 @@ public class FOMainActivity extends AppCompatActivity implements
         cardSiteDetails.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(FOMainActivity.this,SiteDetailsActivity.class));
+                startActivity(new Intent(FOMainActivity.this, SiteDetailsActivity.class));
+            }
+        });
+
+        cardViewDocuments.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(FOMainActivity.this, ViewDocuments.class));
             }
         });
 
@@ -247,15 +256,24 @@ public class FOMainActivity extends AppCompatActivity implements
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     progressView.hideLoader();
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                        if (response.body() != null && response.body().getStatus() != null) {
 
-                            PrefData.writeStringPref(PrefData.employee_name, response.body().getData().get(0).getName());
-                            PrefData.writeStringPref(PrefData.employee_id, String.valueOf(response.body().getData().get(0).getEmployeeId()));
-                            PrefData.writeStringPref(PrefData.employee_code, response.body().getData().get(0).getEmpCode());
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                            tvWelcome.setText(getResources().getString(R.string.welcome) + ", " + PrefData.readStringPref(PrefData.employee_name));
-                        } else {
-                            Utils.showSnackBar(drawerLayout, response.body().getMsg(), FOMainActivity.this);
+                                PrefData.writeStringPref(PrefData.employee_name, response.body().getData().get(0).getName());
+                                PrefData.writeStringPref(PrefData.employee_id, String.valueOf(response.body().getData().get(0).getEmployeeId()));
+                                PrefData.writeStringPref(PrefData.employee_code, response.body().getData().get(0).getEmpCode());
+
+                                tvWelcome.setText(getResources().getString(R.string.welcome) + ", " + PrefData.readStringPref(PrefData.employee_name));
+                            } else {
+
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Toast.makeText(FOMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
+                                    Utils.logout(FOMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(drawerLayout, response.body().getMsg(), FOMainActivity.this);
+                                }
+                            }
                         }
                     } catch (Exception e) {
                         if (response.code() == 400) {
@@ -270,6 +288,7 @@ public class FOMainActivity extends AppCompatActivity implements
                         e.printStackTrace();
                     }
                 }
+
                 @Override
                 public void onFailure(Call<ApiResponse> call, Throwable t) {
                     t.printStackTrace();
@@ -363,23 +382,29 @@ public class FOMainActivity extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            Toast.makeText(FOMainActivity.this, R.string.logout_sucessfull, Toast.LENGTH_SHORT).show();
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                Utils.showToast(FOMainActivity.this, getResources().getString(R.string.logout_sucessfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
 
-                            logout();
-                        } else {
-                            Utils.showSnackBar(drawerLayout, response.body().getMsg(), FOMainActivity.this);
+                                logout();
+                            } else {
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(FOMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(FOMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(FOMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
+                            }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(FOMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(FOMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(FOMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(FOMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 
@@ -397,15 +422,14 @@ public class FOMainActivity extends AppCompatActivity implements
 
     private void logout() {
         PrefData.writeBooleanPref(PrefData.PREF_LOGINSTATUS, false);
+        PrefData.writeStringPref(PrefData.last_checkin_fo, "");
+        PrefData.writeStringPref(PrefData.total_scan_count_fo, "");
 
         Intent intent = new Intent(FOMainActivity.this, LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
         startActivity(intent);
-        finish();
-
     }
 
     @Override
@@ -415,9 +439,9 @@ public class FOMainActivity extends AppCompatActivity implements
             if (grantResults.length <= 0) {
                 Log.i("permissionProblem", "User interaction was cancelled.");
             } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permission Granted Successfully", Toast.LENGTH_SHORT).show();
+                Utils.showToast(FOMainActivity.this, "Permission Granted Successfully", Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
             } else if (grantResults[0] == PackageManager.PERMISSION_DENIED || grantResults[1] == PackageManager.PERMISSION_DENIED || grantResults[2] == PackageManager.PERMISSION_DENIED) {
-                Toast.makeText(FOMainActivity.this, R.string.sorry_cant_use, Toast.LENGTH_LONG).show();
+                Utils.showToast(FOMainActivity.this, getResources().getString(R.string.sorry_cant_use), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 startRequestPermission();
             }
         }

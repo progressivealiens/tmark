@@ -186,9 +186,7 @@ public class MyCameraActivity extends AppCompatActivity {
             try {
                 CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
 
-                if (characteristics != null) {
-                    jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
-                }
+                jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
                 int width = Integer.MAX_VALUE, height = Integer.MAX_VALUE;
 
                 for (int i = 0; i < jpegSizes.length; i++) {

@@ -15,8 +15,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.PowerManager;
-import android.os.SystemClock;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -39,6 +37,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -64,7 +63,7 @@ public class LiveTrackingForOperations extends Service implements
     LocationSettingsRequest.Builder builder;
     static LocationCallback locationCallback;
     String currentTimeStamp, currentDateTime;
-    boolean isFirstTimeRun=false;
+    boolean isFirstTimeRun = false;
 
     public LiveTrackingForOperations() {
     }
@@ -100,7 +99,6 @@ public class LiveTrackingForOperations extends Service implements
         buildGoogleApiClient();
         buildNotification();
         loginToFirebase();
-
     }
 
     private void initialization() {
@@ -178,24 +176,20 @@ public class LiveTrackingForOperations extends Service implements
         String email = getString(R.string.test_email);
         String password = getString(R.string.test_password);
 
-        mAuth.createUserWithEmailAndPassword(email,password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+        mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
+            public void onComplete(Task<AuthResult> task) {
+                if (task.isSuccessful() && task.isComplete()) {
 
-                Log.e("firebase","user created successfully");
-
-                mAuth.signInWithEmailAndPassword(
-                        email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(Task<AuthResult> task) {
-                        if (task.isSuccessful() && task.isComplete()) {
-                            requestLocation();
-                            Log.e("loginSucessfullFirebase", "loginSucessfullFirebase");
-                        } else {
-                            Log.e("loginFailedFirebase", task.getException().getMessage());
-                        }
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if(user != null){
+                        requestLocation();
+                    }else{
+                        Toast.makeText(LiveTrackingForOperations.this, "Unable to identify the user. Please logout and login again", Toast.LENGTH_SHORT).show();
                     }
-                });
+                } else {
+                    Log.e("loginFailedFirebase", task.getException().getMessage());
+                }
             }
         });
     }
@@ -212,20 +206,23 @@ public class LiveTrackingForOperations extends Service implements
         String path = PrefData.readStringPref(PrefData.company_name) + "*" + PrefData.readStringPref(PrefData.employee_type);
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference(path).child(PrefData.readStringPref(PrefData.employee_id));
         ref.removeValue(new DatabaseReference.CompletionListener() {
-
             @Override
             public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
-                try{
-                    if (databaseError != null) {
-                        Log.e("dataError", "Data could not be deleted" + databaseError.getMessage());
-                        Toast.makeText(context, "Error Deleting Values : "+databaseError.getMessage(), Toast.LENGTH_SHORT).show();
-                    } else {
-                        Log.e("dataSucess", "Data deleted successfully.");
+                try {
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if(user != null){
+                        if (databaseError != null) {
+                            Log.e("dataError", "Data could not be deleted" + databaseError.getMessage());
+                            Toast.makeText(context, "Error Deleting Values : " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
+                        } else {
+                            Log.e("dataSucess", "Data deleted successfully.");
+                        }
+                    }else{
+                        Toast.makeText(context, "User not authenticated", Toast.LENGTH_SHORT).show();
                     }
-
-                }catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
-                    Log.e("firebaseFail",e.getMessage());
+                    Log.e("firebaseFail", e.getMessage());
                     Toast.makeText(context, "Error Deleting Values", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -262,9 +259,9 @@ public class LiveTrackingForOperations extends Service implements
                 currentTimeStamp = Utils.currentTimeStamp();
                 currentDateTime = Utils.selectedDateAndTime(Long.valueOf(currentTimeStamp));
 
-                if (!isFirstTimeRun){
-                    lastUpdatedonFirestore(location.getLatitude(),location.getLongitude());
-                    isFirstTimeRun=true;
+                if (!isFirstTimeRun) {
+                    lastUpdatedOnFirestore(location.getLatitude(), location.getLongitude());
+                    isFirstTimeRun = true;
                 }
 
                 LocationModelOperations locationModel = new LocationModelOperations(
@@ -291,23 +288,27 @@ public class LiveTrackingForOperations extends Service implements
     }
 
 
-    private void lastUpdatedonFirestore(double lati,double longi) {
-
+    private void lastUpdatedOnFirestore(double lati, double longi) {
         currentTimeStamp = Utils.currentTimeStamp();
         currentDateTime = Utils.selectedDateAndTime(Long.valueOf(currentTimeStamp));
-        String luUpdated=lati+","+longi+",0,"+currentDateTime;
+        String luUpdated = lati + "," + longi + ",0," + currentDateTime;
 
-        LastUpdatedModel lastUpdatedModel=new LastUpdatedModel(PrefData.readStringPref(PrefData.firebase_token),luUpdated);
+        LastUpdatedModel lastUpdatedModel = new LastUpdatedModel(PrefData.readStringPref(PrefData.firebase_token), luUpdated);
 
         final String path = "lu" + "*" + PrefData.readStringPref(PrefData.company_name) + "*" + PrefData.readStringPref(PrefData.employee_type);
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference(path).child(PrefData.readStringPref(PrefData.employee_id));
         ref.setValue(lastUpdatedModel, new DatabaseReference.CompletionListener() {
             @Override
             public void onComplete(DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
-                if (databaseError != null) {
-                    Log.e("dataError", "Data could not be saved" + databaseError.getMessage());
-                } else {
-                    Log.e("dataSucessLU", "Data saved successfully.LU");
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if(user != null){
+                    if (databaseError != null) {
+                        Log.e("dataError", "Data could not be saved" + databaseError.getMessage());
+                    } else {
+                        Log.e("dataSucessLU", "Data saved successfully.LU");
+                    }  
+                }else{
+                    Toast.makeText(LiveTrackingForOperations.this, "Error creating last updated values", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -324,56 +325,6 @@ public class LiveTrackingForOperations extends Service implements
                 .build();
         mGoogleApiClient.connect();
     }
-
-   /* public static void cancelAlarmForLocationUpdate(Context con) {
-        AlarmManager alarm = (AlarmManager) con.getSystemService(Context.ALARM_SERVICE);
-        if (alarm != null) {
-            alarm.cancel(getPendingIntent(con));
-        }
-    }
-
-    public static void setAlarmForLocationUpdate(boolean force, Context con) {
-        cancelAlarmForLocationUpdate(con);
-
-        AlarmManager alarm = (AlarmManager) con.getSystemService(Context.ALARM_SERVICE);
-
-        if (alarm != null) {
-            if (force) {
-
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                    alarm.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 60 * 1000, getPendingIntent(con));
-                } else {
-                    AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(System.currentTimeMillis() + 60 * 1000, getPendingIntent(con));
-                    alarm.setAlarmClock(alarmClockInfo,getPendingIntent(con));
-
-                   // alarm.setAlarmClock(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 60 * 1000, getPendingIntent(con));
-                }
-            }
-        }
-    }
-
-    private static PendingIntent getPendingIntent(Context conn) {
-        Intent alarmIntent = new Intent(conn, MyLiveTrackingReceiver.class);
-        alarmIntent.setAction(CUSTOM_INTENT);
-        return PendingIntent.getBroadcast(conn, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    public static class MyLiveTrackingReceiver extends BroadcastReceiver {
-
-        public MyLiveTrackingReceiver() {
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.e("fromTrackingReceiver", "fromLiveTrackingReceiver");
-            setAlarmForLocationUpdate(true, context);
-
-            Intent startService=new Intent(context, LiveTrackingForOperations.class);
-            context.startService(startService);
-
-        }
-    }*/
-
 
     @Override
     public void onDestroy() {
@@ -399,7 +350,7 @@ public class LiveTrackingForOperations extends Service implements
     private void initAlarm() {
         AlarmManager alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(this, RestartServiceReceiver.class);
-        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0,intent, PendingIntent.FLAG_ONE_SHOT);
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
             alarmMgr.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 60 * 1000, alarmIntent);
@@ -407,4 +358,5 @@ public class LiveTrackingForOperations extends Service implements
             alarmMgr.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 60 * 1000, alarmIntent);
         }
     }
+
 }

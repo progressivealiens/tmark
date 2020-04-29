@@ -147,39 +147,35 @@ public class AssignGuardFromRoute extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                            allGuardList.clear();
-                            allGuardList.addAll(response.body().getData());
+                                allGuardList.clear();
+                                allGuardList.addAll(response.body().getData());
 
-                            spinnerGuards.setAdapter(new GuardDetailsAdapter(AssignGuardFromRoute.this, allGuardList));
+                                spinnerGuards.setAdapter(new GuardDetailsAdapter(AssignGuardFromRoute.this, allGuardList));
 
-
-                        }  else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(AssignGuardFromRoute.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(rootAssignGuard, response.body().getMsg(), AssignGuardFromRoute.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(AssignGuardFromRoute.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(AssignGuardFromRoute.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
-
                     }
-
                 }
 
                 @Override
@@ -189,7 +185,6 @@ public class AssignGuardFromRoute extends AppCompatActivity {
                 }
             });
         }
-
     }
 
     private void connectToGetGuardsOnThisRoute() {
@@ -208,36 +203,34 @@ public class AssignGuardFromRoute extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                            listGuardsOnRoute.clear();
-                            listGuardsOnRoute.addAll(response.body().getData());
+                                listGuardsOnRoute.clear();
+                                listGuardsOnRoute.addAll(response.body().getData());
 
-                            mAdapter.notifyDataSetChanged();
+                                mAdapter.notifyDataSetChanged();
 
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(AssignGuardFromRoute.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(rootAssignGuard, response.body().getMsg(), AssignGuardFromRoute.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(AssignGuardFromRoute.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(AssignGuardFromRoute.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
-
                     }
                 }
 
@@ -248,8 +241,6 @@ public class AssignGuardFromRoute extends AppCompatActivity {
                 }
             });
         }
-
-
     }
 
     private void connectApiToAssignGuardOnThisRoute() {
@@ -268,36 +259,35 @@ public class AssignGuardFromRoute extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.guard_assigned_to) + PrefData.readStringPref(PrefData.route_name) + getResources().getString(R.string.successfully), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.guard_assigned_to) + PrefData.readStringPref(PrefData.route_name) + getResources().getString(R.string.successfully), Toast.LENGTH_SHORT).show();
 
-                            listGuardsOnRoute.clear();
-                            listGuardsOnRoute.addAll(response.body().getData());
+                                listGuardsOnRoute.clear();
+                                listGuardsOnRoute.addAll(response.body().getData());
 
-                            mAdapter.notifyDataSetChanged();
+                                mAdapter.notifyDataSetChanged();
 
 
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(AssignGuardFromRoute.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(rootAssignGuard, response.body().getMsg(), AssignGuardFromRoute.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(AssignGuardFromRoute.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(AssignGuardFromRoute.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(AssignGuardFromRoute.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignGuardFromRoute.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 

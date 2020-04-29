@@ -146,47 +146,46 @@ public class VerifyRoute extends AppCompatActivity implements
                     swipeContainerFo.setRefreshing(false);
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                assignedPendingRouteModels.clear();
+                                assignedPendingRouteModels.addAll(response.body().getData());
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            assignedPendingRouteModels.clear();
-                            assignedPendingRouteModels.addAll(response.body().getData());
+                                if (assignedPendingRouteModels.isEmpty()) {
+                                    recyclerRouteFo.setVisibility(View.GONE);
+                                    swipeContainerFo.setVisibility(View.GONE);
+                                    emptyView.setVisibility(View.VISIBLE);
 
-                            if (assignedPendingRouteModels.isEmpty()) {
-                                recyclerRouteFo.setVisibility(View.GONE);
-                                swipeContainerFo.setVisibility(View.GONE);
-                                emptyView.setVisibility(View.VISIBLE);
+                                    if (shownLayout.equalsIgnoreCase("assignment")) {
+                                        emptyView.setText("No Route Assigned To You");
+                                    } else {
+                                        emptyView.setText("No Pending Route Found ");
+                                    }
 
-                                if (shownLayout.equalsIgnoreCase("assignment")) {
-                                    emptyView.setText("No Route Assigned To You");
-                                }else{
-                                    emptyView.setText("No Pending Route Found ");
+                                } else {
+                                    recyclerRouteFo.setVisibility(View.VISIBLE);
+                                    swipeContainerFo.setVisibility(View.VISIBLE);
+                                    emptyView.setVisibility(View.GONE);
+                                    mAdapter.notifyDataSetChanged();
                                 }
-
                             } else {
-                                recyclerRouteFo.setVisibility(View.VISIBLE);
-                                swipeContainerFo.setVisibility(View.VISIBLE);
-                                emptyView.setVisibility(View.GONE);
-                                mAdapter.notifyDataSetChanged();
-                            }
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(VerifyRoute.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(VerifyRoute.this, LoginActivity.class);
-                            } else {
-                                Utils.showSnackBar(rootVerify, response.body().getMsg(), VerifyRoute.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(VerifyRoute.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(VerifyRoute.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(VerifyRoute.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(VerifyRoute.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(VerifyRoute.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(VerifyRoute.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(VerifyRoute.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(VerifyRoute.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(VerifyRoute.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(VerifyRoute.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(VerifyRoute.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }

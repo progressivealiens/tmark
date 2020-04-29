@@ -24,8 +24,9 @@ public class ApiResponse {
     private int employeeId;
     private String logo;
     private boolean liveTrackingEnabled;
+    private String notice;
     private List<DataBean> data;
-
+    private List<SiteInstructionBean> siteInstruction;
 
     public String getStatus() {
         return status;
@@ -193,6 +194,22 @@ public class ApiResponse {
 
     public void setLiveTrackingEnabled(boolean liveTrackingEnabled) {
         this.liveTrackingEnabled = liveTrackingEnabled;
+    }
+
+    public List<SiteInstructionBean> getSiteInstruction() {
+        return siteInstruction;
+    }
+
+    public void setSiteInstruction(List<SiteInstructionBean> siteInstruction) {
+        this.siteInstruction = siteInstruction;
+    }
+
+    public String getNotice() {
+        return notice;
+    }
+
+    public void setNotice(String notice) {
+        this.notice = notice;
     }
 
     public static class DataBean {
@@ -492,6 +509,19 @@ public class ApiResponse {
 
         public void setVisitToken(String visitToken) {
             this.visitToken = visitToken;
+        }
+    }
+
+    public static class SiteInstructionBean {
+
+        private String instruction;
+
+        public String getInstruction() {
+            return instruction;
+        }
+
+        public void setInstruction(String instruction) {
+            this.instruction = instruction;
         }
     }
 }

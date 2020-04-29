@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">TMark</string>
 
-
     <string name="navigation_drawer_open">Open</string>
     <string name="navigation_drawer_close">Close</string>
     <string name="site">Site :  </string>
@@ -9,6 +8,7 @@
     <string name="employee_name">Employee Name :  </string>
     <string name="employee_id">Identification Id :  </string>
     <string name="employee_code">Unique Code :  </string>
+    <string name="emp_code">Employee Code :  </string>
     <string name="checkin_time">CheckIn Time :  </string>
     <string name="checkout_time">CheckOut Time :  </string>
     <string name="checkin_address">CheckIn Address :  </string>
@@ -17,11 +17,7 @@
     <string name="time">Time :</string>
     <string name="round_number">Round Number :</string>
     <string name="address">Address :</string>
-    <string name="checkpoints">Checkpoint :</string>
 
-    <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
-    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
-    <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
     <string name="ok">OK</string>
     <string name="checkpoint">Checkpoints</string>
     <string name="home">Home</string>
@@ -29,38 +25,26 @@
     <string name="docs">DOCUMENTS</string>
     <string name="profile">Profile</string>
     <string name="reset_password">Reset Password</string>
-    <string name="verification_history">Verification History</string>
+    <string name="verification_history">Route Verification History</string>
     <string name="share">Share</string>
     <string name="rate_us">Rate Us</string>
     <string name="logout">Logout</string>
     <string name="scan_history">Scan History</string>
-    <string name="reset_password_statement">To reset your password please contact to <i><u><b>Administrator</b></u></i> at below given number with your <i><u><b>Employee Id</b></u></i> or registered <i><u><b>Mobile Number</b></u></i></string>
     <string name="admin_number">Administrator Contact Number :</string>
     <string name="admin_name">Administrator Name :</string>
     <string name="no_scanned_history_found_on_this_selected_date">No Scanned History found on this selected date</string>
-    <string name="title_activity_maps">Map</string>
     <string name="checkpoint_name">Checkpoint Name : </string>
     <string name="date_amp_time">Date &amp; time :</string>
     <string name="text_check_network">No Internet Connection Found.Please Check Your Internet Connection</string>
-    <string name="settings">settings</string>
-    <string name="permission_denied_explanation">User Denied Permission</string>
-    <string name="permission_rationale">Please grant the permission to detect your location</string>
     <string name="search">Search</string>
     <string name="philosopher_bold">Philosopher-Bold.ttf</string>
     <string name="alarm_for">Alarm for</string>
-    <string name="error_cannot_open">Can\'t open camera</string>
-    <string name="error_cannot_write">can\'t write the image</string>
-    <string name="error_cannot_get_permission">Permission not granted to open camera</string>
-    <string name="error_not_having_camera">No Front camera present</string>
     <string name="start_address">Start Address:</string>
     <string name="end_address">End Address :</string>
     <string name="guard_checkin">Guard CheckIn</string>
 
-    <string name="tracking_enabled_notif">Tracking is currently enabled</string>
     <string name="test_email" translatable="false">techsaltsolutions@gmail.com</string>
     <string name="test_password" translatable="false">track@123</string>
-    <string name="firebase_path" translatable="false">tmark</string>
-    <string name="transport_id" translatable="false">909827794519</string>
     <string name="checkin_successfull"><u>Checkin Successful</u></string>
     <string name="name">Name :</string>
     <string name="id">Id :</string>
@@ -81,10 +65,10 @@
     <string name="please_select_date">Please select date</string>
     <string name="check_in">Check In</string>
     <string name="image">image</string>
-    <string name="all_guard_list">All Guard List</string>
+    <string name="all_guard_list"> All Employee List</string>
     <string name="route_start_address">Route Start Address</string>
     <string name="route_end_address">Route End Address</string>
-    <string name="please_maintain_the_minimum_25_30_meters_distance_between_two_checkpoints">Please maintain the minimum (25-30 Meters) distance between two checkpoints.</string>
+    <string name="please_maintain_the_minimum_25_30_meters_distance_between_two_checkpoints">Please maintain the minimum (25–30 Meters) distance between two checkpoints.</string>
     <string name="order_no">Order No.</string>
     <string name="check_point_name">Check Point Name</string>
     <string name="assigned_n_to_me">Assigned \n(to me)</string>
@@ -92,7 +76,7 @@
     <string name="organization_name_one">Organization Name</string>
     <string name="employee_type">Type :</string>
     <string name="checkin_message">Checkin Message</string>
-    <string name="your_comment_here">Your comment here</string>
+    <string name="your_comment_here">Report your incident/feedback</string>
     <string name="post_now">Post Now</string>
     <string name="site_address">Site Address</string>
     <string name="current_trip">Current Trip</string>
@@ -129,9 +113,9 @@
     <string name="updating_your_location">Post Now</string>
     <string name="updating_your_locations">Guard is On Duty</string>
     <string name="my_bk_service">My Background Service</string>
-    <string name="my_notification_id">My Notification Id</string>
     <string name="package_name">com.trackkers.tmark</string>
     <string name="guard_duty">Guard is on duty</string>
+    <string name="employee_duty">Employee is on duty</string>
     <string name="checkin_time_">Check In Time :</string>
     <string name="checkout">Check Out</string>
     <string name="checkin">Check In</string>
@@ -156,7 +140,6 @@
     <string name="noscan">NoScan</string>
     <string name="checkout_sucessfull">Checkout Successful</string>
     <string name="camera_closed">Camera Closed</string>
-    <string name="no_camera_detected">No camera detected!</string>
     <string name="scanned_history">Scanned History</string>
     <string name="posted_sucessfully">Posted successfully !!!</string>
     <string name="enter_company_name">Please enter your Company Name</string>
@@ -212,7 +195,7 @@
     <string name="checkpoint_already_verified">This Checkpoint is already verified</string>
     <string name="volume_up_for_torch">Press volume up for torch</string>
     <string name="verify_routes_lower">Verify Route</string>
-    <string name="assign_unassign_guards_to_route">Assign/Unassign guards to route</string>
+    <string name="assign_unassign_guards_to_route">Assign/Unassign guards to site</string>
     <string name="select_guard_type">Select guard type</string>
     <string name="guards_operational">Guards (Operational)</string>
     <string name="guard_information">Guard Information</string>
@@ -237,6 +220,7 @@
     <string name="unable_to_fetch_exact_location">Unable to fetch the exact location please wait for while</string>
     <string name="site_visit_started_successfully">Site Visit Started Successfully</string>
     <string name="site_visit">Site Visit</string>
+    <string name="site_visit_inspection">Site Visit Inspection</string>
     <string name="select_language">Select Language</string>
     <string name="please_enter_your_passcode_to_enter_the_app">Please Enter Your Passcode To proceed into The App</string>
     <string name="wrong_password">You entered wrong password. Please retry</string>
@@ -250,5 +234,7 @@
     <string name="please_enter_your_new_passcode">Please enter your new passcode</string>
     <string name="reset_login_password">Reset Login Password</string>
     <string name="reset_app_lock">Reset App Lock</string>
+    <string name="checkpoints_already_verified">Checkpoint Already Verified</string>
+    <string name="search_by_guard_name_code">Search by Employee Name/Code</string>
 
 </resources>

@@ -19,6 +19,8 @@ import com.trackkers.tmark.helper.PrefData;
 import com.trackkers.tmark.helper.ProgressView;
 import com.trackkers.tmark.helper.Utils;
 import com.trackkers.tmark.helper.Validation;
+import com.trackkers.tmark.views.activity.LoginActivity;
+import com.trackkers.tmark.views.activity.fieldofficer.FOMainActivity;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponseOperations;
@@ -86,32 +88,40 @@ public class BulkGuardLogin extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                PrefData.writeBooleanPref(PrefData.PREF_LOGINSTATUS, true);
+                                PrefData.writeStringPref(PrefData.employee_type, "bulk_guard");
+                                PrefData.writeStringPref(PrefData.route_id, String.valueOf(response.body().getData().get(0).getRouteId()));
+                                PrefData.writeStringPref(PrefData.company_email, EmailId);
+                                PrefData.writeStringPref(PrefData.site_code, siteCode);
+                                PrefData.writeStringPref(PrefData.route_code, routeCode);
 
-                            PrefData.writeBooleanPref(PrefData.PREF_LOGINSTATUS, true);
-                            PrefData.writeStringPref(PrefData.employee_type, "bulk_guard");
-                            PrefData.writeStringPref(PrefData.route_id, String.valueOf(response.body().getData().get(0).getRouteId()));
-                            PrefData.writeStringPref(PrefData.company_email, EmailId);
-                            PrefData.writeStringPref(PrefData.site_code, siteCode);
-                            PrefData.writeStringPref(PrefData.route_code, routeCode);
+                                Intent intent = new Intent(BulkGuardLogin.this, BulkGuardMainActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
 
-                            startActivity(new Intent(BulkGuardLogin.this, BulkGuardMainActivity.class));
-                            finishAffinity();
-
-                        } else {
-                            Utils.showSnackBar(rootEmpLogin, response.body().getMsg(), BulkGuardLogin.this);
+                            } else {
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(BulkGuardLogin.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(BulkGuardLogin.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(BulkGuardLogin.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
+                            }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(BulkGuardLogin.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardLogin.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(BulkGuardLogin.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardLogin.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink),getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(BulkGuardLogin.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardLogin.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(BulkGuardLogin.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardLogin.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 

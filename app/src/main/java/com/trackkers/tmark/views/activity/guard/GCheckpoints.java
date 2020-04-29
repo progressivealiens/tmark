@@ -143,7 +143,7 @@ public class GCheckpoints extends AppCompatActivity implements
     ShutdownReceiver mReceiver;
     PrefData prefData;
     ApiInterface apiInterface;
-    ProgressView progressView;
+    public static ProgressView progressView;
 
     public static IntentIntegrator qrScan;
 
@@ -158,8 +158,9 @@ public class GCheckpoints extends AppCompatActivity implements
     public static boolean isCheckedIn = false;
     File imageFile = null;
     public File imageScannedFile = null;
-    public boolean isLiveTrackingEnabled = false, isAlarmRinging = false, isSpyImageTaken = false;
-    private APictureCapturingService pictureService;
+    public boolean isLiveTrackingEnabled = false, isAlarmRinging = false;
+    public static boolean isSpyImageTaken = false, isSpyImageFound = false;
+    public static APictureCapturingService pictureService;
 
     GuardCheckpointsRecycler mAdapter;
     List<ApiResponse.DataBean> guardCheckpointsModels;
@@ -191,7 +192,7 @@ public class GCheckpoints extends AppCompatActivity implements
 
         LinearLayoutManager manager = new LinearLayoutManager(this);
         recyclerGuardCheckpoints.setLayoutManager(manager);
-        mAdapter = new GuardCheckpointsRecycler(this, guardCheckpointsModels);
+        mAdapter = new GuardCheckpointsRecycler(this, guardCheckpointsModels, this);
         recyclerGuardCheckpoints.setAdapter(mAdapter);
 
         connectApiToGetGuardPartialDetails();
@@ -264,96 +265,91 @@ public class GCheckpoints extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                if (response.body().isIsCheckedIn()) {
+                                    PrefData.writeStringPref(PrefData.employee_id, String.valueOf(response.body().getEmployeeId()));
+                                    btnCheckin.setText(getString(R.string.checkout));
+                                    if (response.body().getFlag().equalsIgnoreCase(getString(R.string.scan))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            if (response.body().isIsCheckedIn()) {
-                                PrefData.writeStringPref(PrefData.employee_id, String.valueOf(response.body().getEmployeeId()));
-                                btnCheckin.setText(getString(R.string.checkout));
-                                if (response.body().getFlag().equalsIgnoreCase(getString(R.string.scan))) {
+                                        isCheckedIn = true;
+                                        //registerShutdownReceiver();
 
-                                    isCheckedIn = true;
-                                    //registerShutdownReceiver();
+                                        guardCheckpointsModels.clear();
+                                        guardCheckpointsModels.addAll(response.body().getData());
 
-                                    guardCheckpointsModels.clear();
-                                    guardCheckpointsModels.addAll(response.body().getData());
+                                        mAdapter.notifyDataSetChanged();
 
-                                    mAdapter.notifyDataSetChanged();
+                                        linRecyclerLayout.setVisibility(View.VISIBLE);
+                                        linCurrentTrip.setVisibility(View.VISIBLE);
 
-                                    linRecyclerLayout.setVisibility(View.VISIBLE);
-                                    linCurrentTrip.setVisibility(View.VISIBLE);
+                                        tvSiteAddress.setText(response.body().getSiteAddress());
+                                        tvRouteStartAddress.setText(response.body().getRouteStartAddress());
+                                        tvRouteEndAddress.setText(response.body().getRouteEndAddress());
+                                        tvCurrentTrip.setText(String.valueOf(response.body().getCurrentRound()));
+                                        isLiveTrackingEnabled = response.body().isIsLiveTracking();
 
+
+                                        PrefData.writeStringPref(PrefData.current_trip, String.valueOf(response.body().getCurrentRound()));
+                                        PrefData.writeLongPref(PrefData.checkin_time, Utils.fromDateToMillis(response.body().getCheckInTime()));
+                                        PrefData.writeStringPref(PrefData.timeInterval, String.valueOf(response.body().getAlarmInterval()));
+
+                                        if (isLiveTrackingEnabled) {
+                                            scheduleTracking();
+                                        }
+
+                                        scheduleAlarm();
+
+
+                                    } else if (response.body().getFlag().equalsIgnoreCase(getString(R.string.noscan))) {
+
+                                        tvSiteAddress.setText(response.body().getSiteAddress());
+                                        tvRouteStartAddress.setText(response.body().getRouteStartAddress());
+                                        tvRouteEndAddress.setText(response.body().getRouteEndAddress());
+                                        isLiveTrackingEnabled = response.body().isIsLiveTracking();
+
+                                        if (isLiveTrackingEnabled) {
+                                            scheduleTracking();
+                                        }
+                                        scheduleAlarm();
+
+                                        linCurrentTrip.setVisibility(View.GONE);
+                                        linRecyclerLayout.setVisibility(View.GONE);
+
+                                        isCheckedIn = true;
+                                        //registerShutdownReceiver();
+                                    }
+                                } else {
+                                    btnCheckin.setText(getString(R.string.check_in));
+                                    PrefData.writeStringPref(PrefData.employee_id, String.valueOf(response.body().getEmployeeId()));
                                     tvSiteAddress.setText(response.body().getSiteAddress());
                                     tvRouteStartAddress.setText(response.body().getRouteStartAddress());
                                     tvRouteEndAddress.setText(response.body().getRouteEndAddress());
-                                    tvCurrentTrip.setText(String.valueOf(response.body().getCurrentRound()));
-                                    isLiveTrackingEnabled = response.body().isIsLiveTracking();
-
-
-                                    PrefData.writeStringPref(PrefData.current_trip, String.valueOf(response.body().getCurrentRound()));
-                                    PrefData.writeLongPref(PrefData.checkin_time, Utils.fromDateToMillis(response.body().getCheckInTime()));
-                                    PrefData.writeStringPref(PrefData.timeInterval, String.valueOf(response.body().getAlarmInterval()));
-
-                                    if (isLiveTrackingEnabled) {
-                                        scheduleTracking();
-                                    }
-
-                                    scheduleAlarm();
-
-
-                                } else if (response.body().getFlag().equalsIgnoreCase(getString(R.string.noscan))) {
-
-                                    tvSiteAddress.setText(response.body().getSiteAddress());
-                                    tvRouteStartAddress.setText(response.body().getRouteStartAddress());
-                                    tvRouteEndAddress.setText(response.body().getRouteEndAddress());
-                                    isLiveTrackingEnabled = response.body().isIsLiveTracking();
-
-                                    if (isLiveTrackingEnabled) {
-                                        scheduleTracking();
-                                    }
-                                    scheduleAlarm();
-
                                     linCurrentTrip.setVisibility(View.GONE);
                                     linRecyclerLayout.setVisibility(View.GONE);
-
-                                    isCheckedIn = true;
-                                    //registerShutdownReceiver();
                                 }
                             } else {
-                                btnCheckin.setText(getString(R.string.check_in));
-                                PrefData.writeStringPref(PrefData.employee_id, String.valueOf(response.body().getEmployeeId()));
-                                tvSiteAddress.setText(response.body().getSiteAddress());
-                                tvRouteStartAddress.setText(response.body().getRouteStartAddress());
-                                tvRouteEndAddress.setText(response.body().getRouteEndAddress());
-                                linCurrentTrip.setVisibility(View.GONE);
-                                linRecyclerLayout.setVisibility(View.GONE);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(GCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(GCheckpoints.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(GCheckpoints.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(GCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(GCheckpoints.this, LoginActivity.class);
-                            } else {
-
-                                Utils.showSnackBar(rootGcheckpoints, response.body().getMsg(), GCheckpoints.this);
-                            }
-
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 
                     }
-
                 }
 
                 @Override
@@ -362,7 +358,6 @@ public class GCheckpoints extends AppCompatActivity implements
                     t.printStackTrace();
                 }
             });
-
         }
     }
 
@@ -375,9 +370,9 @@ public class GCheckpoints extends AppCompatActivity implements
             RequestBody Latitude = RequestBody.create(MediaType.parse("text/plain"), currentLatitude + "");
             RequestBody Longitude = RequestBody.create(MediaType.parse("text/plain"), currentLongitude + "");
             RequestBody SecurityToken = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.security_token) + "");
-            RequestBody RouteId = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(PrefData.readStringPref(PrefData.route_id)) + "");
+            RequestBody RouteId = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.route_id) + "");
             RequestBody DeviceId = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.deviceID) + "");
-            RequestBody Battery = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(Utils.getBatteryPercentage(GCheckpoints.this)) + "");
+            RequestBody Battery = RequestBody.create(MediaType.parse("text/plain"), Utils.getBatteryPercentage(GCheckpoints.this) + "");
 
             Call<ApiResponse> call = apiInterface.GuardCheckIn(
                     SecurityToken,
@@ -394,74 +389,72 @@ public class GCheckpoints extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                Utils.showToast(GCheckpoints.this, getResources().getString(R.string.checkin_successfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                btnCheckin.setText("Check Out");
 
-                            Toast.makeText(GCheckpoints.this, R.string.checkin_successfull, Toast.LENGTH_SHORT).show();
-                            btnCheckin.setText("Check Out");
+                                if (response.body().getFlag().equalsIgnoreCase("Scan")) {
+                                    isCheckedIn = true;
+                                    //registerShutdownReceiver();
 
-                            if (response.body().getFlag().equalsIgnoreCase("Scan")) {
-                                isCheckedIn = true;
-                                //registerShutdownReceiver();
+                                    guardCheckpointsModels.clear();
+                                    guardCheckpointsModels.addAll(response.body().getData());
 
-                                guardCheckpointsModels.clear();
-                                guardCheckpointsModels.addAll(response.body().getData());
+                                    mAdapter.notifyDataSetChanged();
 
-                                mAdapter.notifyDataSetChanged();
+                                    linRecyclerLayout.setVisibility(View.VISIBLE);
+                                    linCurrentTrip.setVisibility(View.VISIBLE);
 
-                                linRecyclerLayout.setVisibility(View.VISIBLE);
-                                linCurrentTrip.setVisibility(View.VISIBLE);
+                                    tvCurrentTrip.setText(String.valueOf(response.body().getCurrentRound()));
 
-                                tvCurrentTrip.setText(String.valueOf(response.body().getCurrentRound()));
+                                    isLiveTrackingEnabled = response.body().isIsLiveTracking();
 
-                                isLiveTrackingEnabled = response.body().isIsLiveTracking();
+                                    PrefData.writeStringPref(PrefData.current_trip, String.valueOf(response.body().getCurrentRound()));
+                                    PrefData.writeLongPref(PrefData.checkin_time, Utils.fromDateToMillis(response.body().getCheckInTime()));
+                                    PrefData.writeStringPref(PrefData.timeInterval, String.valueOf(response.body().getAlarmInterval()));
+                                    PrefData.writeStringPref(PrefData.route_id_service, PrefData.readStringPref(PrefData.route_id));
+                                    PrefData.writeStringPref(PrefData.route_name_service, PrefData.readStringPref(PrefData.route_name));
 
-                                PrefData.writeStringPref(PrefData.current_trip, String.valueOf(response.body().getCurrentRound()));
-                                PrefData.writeLongPref(PrefData.checkin_time, Utils.fromDateToMillis(response.body().getCheckInTime()));
-                                PrefData.writeStringPref(PrefData.timeInterval, String.valueOf(response.body().getAlarmInterval()));
-                                PrefData.writeStringPref(PrefData.route_id_service, PrefData.readStringPref(PrefData.route_id));
-                                PrefData.writeStringPref(PrefData.route_name_service, PrefData.readStringPref(PrefData.route_name));
+                                    if (isLiveTrackingEnabled) {
+                                        scheduleTracking();
+                                    }
+                                    scheduleAlarm();
 
-                                if (isLiveTrackingEnabled) {
-                                    scheduleTracking();
+                                } else {
+                                    isCheckedIn = true;
+                                    //registerShutdownReceiver();
+
+                                    PrefData.writeStringPref(PrefData.route_id_service, PrefData.readStringPref(PrefData.route_id));
+                                    PrefData.writeStringPref(PrefData.route_name_service, PrefData.readStringPref(PrefData.route_name));
+
+                                    if (isLiveTrackingEnabled) {
+                                        scheduleTracking();
+                                    }
+                                    scheduleAlarm();
+
+                                    linRecyclerLayout.setVisibility(View.GONE);
+                                    linCurrentTrip.setVisibility(View.GONE);
                                 }
-                                scheduleAlarm();
-
                             } else {
-                                isCheckedIn = true;
-                                //registerShutdownReceiver();
-
-                                PrefData.writeStringPref(PrefData.route_id_service, PrefData.readStringPref(PrefData.route_id));
-                                PrefData.writeStringPref(PrefData.route_name_service, PrefData.readStringPref(PrefData.route_name));
-
-                                if (isLiveTrackingEnabled) {
-                                    scheduleTracking();
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(GCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(GCheckpoints.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(GCheckpoints.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 }
-                                scheduleAlarm();
-
-                                linRecyclerLayout.setVisibility(View.GONE);
-                                linCurrentTrip.setVisibility(View.GONE);
-                            }
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(GCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(GCheckpoints.this, LoginActivity.class);
-                            } else {
-
-                                Utils.showSnackBar(rootGcheckpoints, response.body().getMsg(), GCheckpoints.this);
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
@@ -481,7 +474,7 @@ public class GCheckpoints extends AppCompatActivity implements
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
             sendTakePictureIntent();
         } else {
-            Toast.makeText(this, "Your Phone doesn\'t have camera", Toast.LENGTH_SHORT).show();
+            Utils.showToast(GCheckpoints.this, "Your Phone doesn\'t have camera", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
         }
     }
 
@@ -498,7 +491,7 @@ public class GCheckpoints extends AppCompatActivity implements
                 startActivityForResult(cameraIntent, REQUEST_CODE_FOR_CAMERA);
             }
         } catch (IOException ex) {
-            Toast.makeText(this, "Photo file can't be created, please try again", Toast.LENGTH_SHORT).show();
+            Utils.showToast(GCheckpoints.this, "Photo file can't be created, please try again", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
         }
     }
 
@@ -529,7 +522,7 @@ public class GCheckpoints extends AppCompatActivity implements
         this.unregisterReceiver(mReceiver);
     }
 
-    private void ConnectApiToVerifyGuardScanCheckpoint(boolean isFilePresent) {
+    private void ConnectApiToVerifyGuardScanCheckpoint(String scannedCheckpointId, String scannedCheckpointType, boolean isFilePresent) {
         if (CheckNetworkConnection.isConnection1(GCheckpoints.this, true)) {
 
             MultipartBody.Part filePart = null;
@@ -542,9 +535,9 @@ public class GCheckpoints extends AppCompatActivity implements
             RequestBody Latitude = RequestBody.create(MediaType.parse("text/plain"), currentLatitude + "");
             RequestBody Longitude = RequestBody.create(MediaType.parse("text/plain"), currentLongitude + "");
             RequestBody SecurityToken = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.security_token) + "");
-            RequestBody CheckpointId = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.checkpoint_id) + "");
+            RequestBody CheckpointId = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointId);
             RequestBody DeviceId = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.deviceID) + "");
-            RequestBody Battery = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(Utils.getBatteryPercentage(GCheckpoints.this)) + "");
+            RequestBody Battery = RequestBody.create(MediaType.parse("text/plain"), Utils.getBatteryPercentage(GCheckpoints.this) + "");
 
             Call<ApiResponse> call = apiInterface.GuardScanCheckpoint(
                     SecurityToken,
@@ -561,39 +554,40 @@ public class GCheckpoints extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                            tvCurrentTrip.setText(String.valueOf(response.body().getCurrentRound()));
-                            guardCheckpointsModels.get(Integer.valueOf(PrefData.readStringPref(PrefData.checkpoint_id_position))).setIsVerified(true);
+                                tvCurrentTrip.setText(String.valueOf(response.body().getCurrentRound()));
+                                guardCheckpointsModels.get(Integer.valueOf(PrefData.readStringPref(PrefData.checkpoint_id_position))).setIsVerified(true);
 
-                            if (Integer.valueOf(PrefData.readStringPref(PrefData.current_trip)) < response.body().getCurrentRound()) {
-                                for (int i = 0; i < guardCheckpointsModels.size(); i++) {
-                                    guardCheckpointsModels.get(i).setIsVerified(false);
+                                if (Integer.valueOf(PrefData.readStringPref(PrefData.current_trip)) < response.body().getCurrentRound()) {
+                                    for (int i = 0; i < guardCheckpointsModels.size(); i++) {
+                                        guardCheckpointsModels.get(i).setIsVerified(false);
+                                    }
+                                    PrefData.writeStringPref(PrefData.current_trip, String.valueOf(response.body().getCurrentRound()));
+                                    Utils.showToast(GCheckpoints.this, "Trip " + (Integer.valueOf(PrefData.readStringPref(PrefData.current_trip)) - 1) + " Completed. New Trip Started", Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                } else {
+                                    Utils.showToast(GCheckpoints.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
                                 }
-                                PrefData.writeStringPref(PrefData.current_trip, String.valueOf(response.body().getCurrentRound()));
-                                Toast.makeText(GCheckpoints.this, "Trip " + (Integer.valueOf(PrefData.readStringPref(PrefData.current_trip)) - 1) + " Completed. New Trip Started", Toast.LENGTH_SHORT).show();
-
+                                mAdapter.notifyDataSetChanged();
                             } else {
-                                Toast.makeText(GCheckpoints.this, response.body().getMsg(), Toast.LENGTH_SHORT).show();
-                            }
-                            mAdapter.notifyDataSetChanged();
-                        } else {
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(GCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(GCheckpoints.this, LoginActivity.class);
-                            } else {
-                                Utils.showSnackBar(rootGcheckpoints, response.body().getMsg(), GCheckpoints.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(GCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(GCheckpoints.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(GCheckpoints.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
                         }
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
@@ -631,39 +625,37 @@ public class GCheckpoints extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                isCheckedIn = false;
 
-                            isCheckedIn = false;
+                                //unregisterShutdownReceiver();
 
-                            //unregisterShutdownReceiver();
+                                btnCheckin.setText(getString(R.string.check_in));
+                                Utils.showToast(GCheckpoints.this, getResources().getString(R.string.checkout_sucessfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                dismissAlarmAndTracking();
+                                startActivity(new Intent(GCheckpoints.this, GMainActivity.class));
+                                finish();
 
-                            btnCheckin.setText(getString(R.string.check_in));
-                            Toast.makeText(GCheckpoints.this, R.string.checkout_sucessfull, Toast.LENGTH_SHORT).show();
-                            dismissAlarmAndTracking();
-                            startActivity(new Intent(GCheckpoints.this, GMainActivity.class));
-                            finish();
-
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(GCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(GCheckpoints.this, LoginActivity.class);
                             } else {
-
-                                Utils.showSnackBar(rootGcheckpoints, response.body().getMsg(), GCheckpoints.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(GCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(GCheckpoints.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(GCheckpoints.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(GCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 
@@ -705,7 +697,8 @@ public class GCheckpoints extends AppCompatActivity implements
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (result != null) {
             if (result.getContents() == null) {
-                Toast.makeText(this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                progressView.hideLoader();
+                Utils.showToast(GCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             } else {
                 try {
                     JSONObject jObj = new JSONObject(result.getContents());
@@ -716,9 +709,15 @@ public class GCheckpoints extends AppCompatActivity implements
                 }
 
                 if (scannedCheckpointId.equalsIgnoreCase(PrefData.readStringPref(PrefData.checkpoint_id)) && scannedCheckpointType.equalsIgnoreCase("checkpoint")) {
-                    getLocationFromService(1);
+                    if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
+                        progressView.hideLoader();
+                        Utils.showToast(GCheckpoints.this, getResources().getString(R.string.unable_to_fetch), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                    } else {
+                        ConnectApiToVerifyGuardScanCheckpoint(scannedCheckpointId, scannedCheckpointType, isSpyImageFound);
+                    }
                 } else {
-                    Toast.makeText(this, R.string.wrong_qr, Toast.LENGTH_SHORT).show();
+                    progressView.hideLoader();
+                    Utils.showToast(GCheckpoints.this, getResources().getString(R.string.wrong_qr), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 }
             }
         }
@@ -752,7 +751,7 @@ public class GCheckpoints extends AppCompatActivity implements
 
                 getLocationFromService(0);
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                Toast.makeText(this, R.string.camera_closed, Toast.LENGTH_SHORT).show();
+                Utils.showToast(GCheckpoints.this, getResources().getString(R.string.camera_closed), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         }
     }
@@ -773,7 +772,7 @@ public class GCheckpoints extends AppCompatActivity implements
                 }
 
             } else if (grantResults[0] == PackageManager.PERMISSION_DENIED || grantResults[1] == PackageManager.PERMISSION_DENIED || grantResults[2] == PackageManager.PERMISSION_DENIED) {
-                Toast.makeText(GCheckpoints.this, R.string.sorry_cant_use, Toast.LENGTH_LONG).show();
+                Utils.showToast(GCheckpoints.this, getResources().getString(R.string.sorry_cant_use), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 startRequestPermission();
             }
         }
@@ -789,7 +788,6 @@ public class GCheckpoints extends AppCompatActivity implements
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-
                         connectApiToCheckInGuard();
                     }
                 }, 500);
@@ -797,21 +795,21 @@ public class GCheckpoints extends AppCompatActivity implements
             } else {
                 connectApiToCheckInGuard();
             }
-        } else if (Flag == 1) {
+        } /*else if (Flag == 1) {
             if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
-                Toast.makeText(this, R.string.unable_to_fetch, Toast.LENGTH_SHORT).show();
+                Utils.showToast(GCheckpoints.this, getResources().getString(R.string.unable_to_fetch), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             } else {
-
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
+                        isSpyImageTaken = false;
                         progressView.showLoader();
                         pictureService.startCapturing(GCheckpoints.this);
                     }
                 }, 200);
             }
-        } else if (Flag == 2) {
+        } */ else if (Flag == 2) {
 
             if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
                 getLastLocation();
@@ -820,7 +818,6 @@ public class GCheckpoints extends AppCompatActivity implements
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-
                         connectApiToCheckOutGuard();
                     }
                 }, 500);
@@ -1003,11 +1000,19 @@ public class GCheckpoints extends AppCompatActivity implements
         if (!isSpyImageTaken) {
             if (pictureData != null && pictureUrl != null) {
                 imageScannedFile = new File(pictureUrl);
-                ConnectApiToVerifyGuardScanCheckpoint(true);
+                //ConnectApiToVerifyGuardScanCheckpoint(true);
+                Utils.showToast(this, getResources().getString(R.string.volume_up_for_torch), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                qrScan.setOrientationLocked(true);
+                qrScan.initiateScan();
                 isSpyImageTaken = true;
+                isSpyImageFound = true;
             } else {
-                ConnectApiToVerifyGuardScanCheckpoint(false);
+                //ConnectApiToVerifyGuardScanCheckpoint(false);
+                Utils.showToast(this, getResources().getString(R.string.volume_up_for_torch), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                qrScan.setOrientationLocked(true);
+                qrScan.initiateScan();
                 isSpyImageTaken = true;
+                isSpyImageFound = false;
             }
         }
     }
@@ -1017,11 +1022,21 @@ public class GCheckpoints extends AppCompatActivity implements
         if (!isSpyImageTaken) {
             if (picturesTaken != null && !picturesTaken.isEmpty()) {
                 imageScannedFile = new File(picturesTaken.lastEntry().getKey());
-                ConnectApiToVerifyGuardScanCheckpoint(true);
+                Utils.showToast(this, getResources().getString(R.string.volume_up_for_torch), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                qrScan.setOrientationLocked(true);
+                qrScan.initiateScan();
                 isSpyImageTaken = true;
+                isSpyImageFound = true;
+                /*ConnectApiToVerifyGuardScanCheckpoint(true);
+                isSpyImageTaken = true;*/
             } else {
-                ConnectApiToVerifyGuardScanCheckpoint(false);
+                Utils.showToast(this, getResources().getString(R.string.volume_up_for_torch), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                qrScan.setOrientationLocked(true);
+                qrScan.initiateScan();
                 isSpyImageTaken = true;
+                isSpyImageFound = false;
+                /*ConnectApiToVerifyGuardScanCheckpoint(false);
+                isSpyImageTaken = true;*/
             }
         }
     }

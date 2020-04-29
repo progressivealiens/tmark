@@ -1,7 +1,9 @@
 package com.trackkers.tmark.views.activity.fieldofficer;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -9,6 +11,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
@@ -47,6 +50,8 @@ import com.trackkers.tmark.customviews.MyTextview;
 import com.trackkers.tmark.helper.CheckNetworkConnection;
 import com.trackkers.tmark.helper.PrefData;
 import com.trackkers.tmark.helper.ProgressView;
+import com.trackkers.tmark.helper.Utils;
+import com.trackkers.tmark.views.activity.LoginActivity;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponse;
@@ -104,7 +109,7 @@ public class SiteDetailsActivity extends AppCompatActivity implements SwipeRefre
     LocationRequest mLocationRequest;
     SettingsClient mSettingsClient;
     LocationSettingsRequest mLocationSettingsRequest;
-    FusedLocationProviderClient fusedLocationProviderClient;
+    static FusedLocationProviderClient fusedLocationProviderClient;
     LocationSettingsRequest.Builder builder;
     LocationCallback locationCallback;
 
@@ -117,12 +122,14 @@ public class SiteDetailsActivity extends AppCompatActivity implements SwipeRefre
     public static final int CAMERA_REQUEST = 127;
     public static final int REQUEST_CODE_FOR_IMAGE = 126;
 
+    Context context;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_site_details);
         ButterKnife.bind(this);
-
+        context=SiteDetailsActivity.this;
         initialize();
 
         buildGoogleApiClient();
@@ -193,24 +200,30 @@ public class SiteDetailsActivity extends AppCompatActivity implements SwipeRefre
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     progressView.hideLoader();
                     swipeSiteDetails.setRefreshing(false);
+                    if (response.body() != null && response.body().getStatus() != null) {
+                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                    if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                            siteDetails.clear();
+                            siteDetails.addAll(response.body().getData());
 
-                        siteDetails.clear();
-                        siteDetails.addAll(response.body().getData());
+                            if (siteDetails.isEmpty()) {
+                                recyclerSiteDetails.setVisibility(View.GONE);
+                                emptyView.setVisibility(View.VISIBLE);
+                                emptyView.setText("No Site Assigned To You");
+                            } else {
+                                recyclerSiteDetails.setVisibility(View.VISIBLE);
+                                emptyView.setVisibility(View.GONE);
+                                mAdapter.notifyDataSetChanged();
+                            }
 
-                        if (siteDetails.isEmpty()) {
-                            recyclerSiteDetails.setVisibility(View.GONE);
-                            emptyView.setVisibility(View.VISIBLE);
-                            emptyView.setText("No Site Assigned To You");
                         } else {
-                            recyclerSiteDetails.setVisibility(View.VISIBLE);
-                            emptyView.setVisibility(View.GONE);
-                            mAdapter.notifyDataSetChanged();
+                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                Utils.showToast(SiteDetailsActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                Utils.logout(SiteDetailsActivity.this, LoginActivity.class);
+                            } else {
+                                Utils.showToast(SiteDetailsActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                            }
                         }
-
-                    } else {
-                        Toast.makeText(SiteDetailsActivity.this, response.body().getMsg(), Toast.LENGTH_LONG).show();
                     }
                 }
 
@@ -316,12 +329,9 @@ public class SiteDetailsActivity extends AppCompatActivity implements SwipeRefre
             if (mLastLocation.getAccuracy() <= 100) {
                 currentLatitude = mLastLocation.getLatitude();
                 currentLongitude = mLastLocation.getLongitude();
-                Log.e("currentLatitude", String.valueOf(currentLatitude));
-                Log.e("currentLongitude", String.valueOf(currentLongitude));
             }
         }
     }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -339,12 +349,12 @@ public class SiteDetailsActivity extends AppCompatActivity implements SwipeRefre
                 }
 
                 if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
-                    Toast.makeText(this, getResources().getString(R.string.unable_to_fetch_exact_location), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(SiteDetailsActivity.this, getResources().getString(R.string.unable_to_fetch_exact_location), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else {
                     connectApiToStartSiteVisit();
                 }
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                Toast.makeText(this, "Camera Closed", Toast.LENGTH_SHORT).show();
+                Utils.showToast(SiteDetailsActivity.this, "Camera Closed", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         } else if (requestCode == REQUEST_CODE_FOR_IMAGE) {
             if (resultCode == Activity.RESULT_OK) {
@@ -361,7 +371,7 @@ public class SiteDetailsActivity extends AppCompatActivity implements SwipeRefre
                 mAdapter.notifyItemChanged(Integer.valueOf(PrefData.readStringPref(PrefData.site_attach_image_position)), new SiteDetailsAdapter.SetImage());
 
             } else {
-                Toast.makeText(this, "Camera Closed", Toast.LENGTH_SHORT).show();
+                Utils.showToast(SiteDetailsActivity.this, "Camera Closed", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         }
     }
@@ -369,56 +379,96 @@ public class SiteDetailsActivity extends AppCompatActivity implements SwipeRefre
     private void connectApiToStartSiteVisit() {
         if (CheckNetworkConnection.isConnection1(SiteDetailsActivity.this, true)) {
             progressView.showLoader();
+            if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
+                getLastKnownLocation(context);
+            }
 
-            RequestBody SecurityToken = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.security_token));
-            RequestBody SUID = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.suid));
-            RequestBody Latitude = RequestBody.create(MediaType.parse("text/plain"), currentLatitude + "");
-            RequestBody Longitude = RequestBody.create(MediaType.parse("text/plain"), currentLongitude + "");
-            MultipartBody.Part filePart = MultipartBody.Part.createFormData("selfie", file.getName(), RequestBody.create(MediaType.parse("image/*"), file));
-
-            Call<ApiResponse> call = apiInterface.StartSiteVisit(
-                    SecurityToken,
-                    SUID,
-                    Latitude,
-                    Longitude,
-                    filePart
-            );
-
-            call.enqueue(new Callback<ApiResponse>() {
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
                 @Override
-                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
-                    progressView.hideLoader();
-                    swipeSiteDetails.setRefreshing(false);
+                public void run() {
 
-                    if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        Toast.makeText(SiteDetailsActivity.this, getResources().getString(R.string.site_visit_started_successfully), Toast.LENGTH_SHORT).show();
+                    RequestBody SecurityToken = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.security_token));
+                    RequestBody SUID = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.suid));
+                    RequestBody Latitude = RequestBody.create(MediaType.parse("text/plain"), currentLatitude + "");
+                    RequestBody Longitude = RequestBody.create(MediaType.parse("text/plain"), currentLongitude + "");
+                    MultipartBody.Part filePart = MultipartBody.Part.createFormData("selfie", file.getName(), RequestBody.create(MediaType.parse("image/*"), file));
 
-                        swipeSiteDetails.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                swipeSiteDetails.setRefreshing(true);
-                                connectApiToFetchSiteDetails();
+                    Call<ApiResponse> call = apiInterface.StartSiteVisit(
+                            SecurityToken,
+                            SUID,
+                            Latitude,
+                            Longitude,
+                            filePart
+                    );
+
+                    call.enqueue(new Callback<ApiResponse>() {
+                        @Override
+                        public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                            progressView.hideLoader();
+                            swipeSiteDetails.setRefreshing(false);
+                            if (response.body() != null && response.body().getStatus() != null) {
+                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+
+                                    Utils.showToast(SiteDetailsActivity.this, getResources().getString(R.string.site_visit_started_successfully), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+
+                                    swipeSiteDetails.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            swipeSiteDetails.setRefreshing(true);
+                                            connectApiToFetchSiteDetails();
+                                        }
+                                    });
+
+                                } else {
+                                    if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                        Utils.showToast(SiteDetailsActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                        Utils.logout(SiteDetailsActivity.this, LoginActivity.class);
+                                    } else {
+                                        Utils.showToast(SiteDetailsActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    }
+                                }
                             }
-                        });
+                        }
 
-                    } else {
-                        Toast.makeText(SiteDetailsActivity.this, response.body().getMsg(), Toast.LENGTH_LONG).show();
-                    }
+                        @Override
+                        public void onFailure(Call<ApiResponse> call, Throwable t) {
+                            progressView.hideLoader();
+                            swipeSiteDetails.setRefreshing(false);
+                            t.printStackTrace();
+                        }
+                    });
                 }
-
-                @Override
-                public void onFailure(Call<ApiResponse> call, Throwable t) {
-                    progressView.hideLoader();
-                    swipeSiteDetails.setRefreshing(false);
-                    t.printStackTrace();
-                }
-            });
-
-
+            }, 200);
         }
-
     }
+
+
+    @SuppressLint("MissingPermission")
+    public static void getLastKnownLocation(Context context) {
+
+        fusedLocationProviderClient.getLastLocation()
+                .addOnSuccessListener(new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) {
+                            currentLatitude = location.getLatitude();
+                            currentLongitude = location.getLongitude();
+                            Log.e("lastCurrentLatitude", String.valueOf(currentLatitude));
+                            Log.e("lastCurrentLongitude", String.valueOf(currentLongitude));
+                        } else {
+                            Utils.showToast(context, context.getResources().getString(R.string.location_not_detected), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        }
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Utils.showToast(context, context.getResources().getString(R.string.exact_location_not_detected), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+            }
+        });
+    }
+
 
     @Override
     protected void onResume() {

@@ -3,22 +3,24 @@ package com.trackkers.tmark.helper;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+
 import com.crashlytics.android.Crashlytics;
+import com.instacart.library.truetime.TrueTime;
+
+import java.io.IOException;
+import java.util.Date;
+
 import io.fabric.sdk.android.Fabric;
-
-
-/**
- * Created by Hp on 4/5/2018.
- */
 
 public class PrefData extends Application {
 
     private static SharedPreferences mSharedPreferences;
     private static SharedPreferences.Editor editor;
 
+    public static Date noReallyThisIsTheTrueDateAndTime = null;
+
     private static PrefData mInstance;
     private static String sharedPrefName = "Tmark";
-
 
     public static String PREF_LOGINSTATUS = "pref_loginstatus";
     public static String PREF_selected_language = "pref_selected_language";
@@ -52,20 +54,51 @@ public class PrefData extends Application {
     public static String guard_name = "pref_guard_name";
     public static String switchoff_time = "pref_switchoff_time";
     public static String switchoff_battery_status = "pref_switchoff_batter_status";
-    public static String autostartup="pref_autostartup";
-    public static String autostartuppermission="pref_autostartuppermission";
-    public static String suid="pref_suid";
-    public static String site_attach_image_position="pref_site_attach_image_position";
+    public static String autostartup = "pref_autostartup";
+    public static String suid = "pref_suid";
+    public static String site_attach_image_position = "pref_site_attach_image_position";
+    public static String last_checkin_fo = "pref_last_checkin_fo";
+    public static String total_scan_count_fo = "pref_total_scan_count_fo";
+    public static String last_checkin_operations = "pref_last_checkin_operations";
+    public static String total_scan_count_operations = "pref_total_scan_count_operations";
+    public static String e_register_checkin_position = "pref_e_register_checkin_position";
+
+    public PrefData() {
+    }
 
     @Override
     public void onCreate() {
         super.onCreate();
         Fabric.with(this, new Crashlytics());
         mInstance = this;
+
+        setExactTime();
     }
 
-    public PrefData() {
+    public static String setExactTime() {
+
+        noReallyThisIsTheTrueDateAndTime = new Date();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    TrueTime.build().initialize();
+
+                    if (TrueTime.isInitialized()) {
+                        noReallyThisIsTheTrueDateAndTime = TrueTime.now();
+                        //Log.e("exactDateIs", noReallyThisIsTheTrueDateAndTime.toString());
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+        return noReallyThisIsTheTrueDateAndTime.toString();
     }
+
+
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -226,4 +259,5 @@ public class PrefData extends Application {
     public static void setCheckpoint_id(String checkpoint_id) {
         PrefData.checkpoint_id = checkpoint_id;
     }
+
 }

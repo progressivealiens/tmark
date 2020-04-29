@@ -9,7 +9,9 @@ import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.location.Location;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,20 +19,22 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.text.Html;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 
@@ -57,6 +61,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.squareup.picasso.Picasso;
 import com.trackkers.tmark.R;
+import com.trackkers.tmark.customviews.MyButton;
 import com.trackkers.tmark.customviews.MyTextview;
 import com.trackkers.tmark.helper.CheckNetworkConnection;
 import com.trackkers.tmark.helper.PictureCapturingListener;
@@ -68,7 +73,7 @@ import com.trackkers.tmark.services.APictureCapturingService;
 import com.trackkers.tmark.services.LiveTrackingForOperations;
 import com.trackkers.tmark.services.PictureCapturingServiceImpl;
 import com.trackkers.tmark.views.activity.LoginActivity;
-import com.trackkers.tmark.views.activity.guard.GCheckpoints;
+import com.trackkers.tmark.views.activity.operations.OperationsMainActivity;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponse;
@@ -79,6 +84,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.TreeMap;
 
 import butterknife.BindView;
@@ -107,6 +114,8 @@ public class FOMarkAttendance extends AppCompatActivity implements
     Toolbar toolbar;
     @BindView(R.id.tv_name)
     MyTextview tvName;
+    @BindView(R.id.tv_view_notice)
+    MyTextview tvNotice;
     @BindView(R.id.tv_company_name)
     MyTextview tvCompanyName;
     @BindView(R.id.tv_emp_id)
@@ -132,7 +141,16 @@ public class FOMarkAttendance extends AppCompatActivity implements
     @BindView(R.id.fab_scan)
     FloatingActionButton fabScan;
     @BindView(R.id.root_fo_attendance)
-    CoordinatorLayout rootFoAttendance;
+    RelativeLayout rootFoAttendance;
+    @BindView(R.id.btn_site_visit)
+    Button btnSiteVisit;
+    @BindView(R.id.tv_last_checkin)
+    MyTextview tvLastCheckin;
+    @BindView(R.id.tv_total_qr_scan)
+    MyTextview tvTotalQrScan;
+    @BindView(R.id.tv_sos)
+    MyTextview tvSos;
+
 
     GoogleApiClient mGoogleApiClient;
     Location mLastLocation;
@@ -153,14 +171,17 @@ public class FOMarkAttendance extends AppCompatActivity implements
     private static final int REQUEST_CODE_FOR_FRONT_CAMERA = 215;
     public static final int NOTIFICATION_CHANNEL_ID = 151;
 
-    File file, commentFile, spyFile;
+    File file = null, commentFile = null, spyFile = null;
     MultipartBody.Part filePart = null;
 
     double currentLatitude = 0.0, currentLongitude = 0.0;
-    public boolean isConveyanceAsked = false, isLiveTrackingEnabled = false,isSpyImageTaken=false;
+    public boolean isConveyanceAsked = false, isLiveTrackingEnabled = false, isSpyImageTaken = false, isSpyImageFound = false;
     public static boolean isServiceRunning = false;
     String checkinMessage = "", commentText = "", commentType = "", deviceName = "", pictureFilePathCheckin = "", pictureFilePathComment = "", scannedCheckpointId = "", scannedCheckpointType = "";
+    String notice = "", currentDateAndTime = "";
+    int totalScannedQr = 0;
     IntentIntegrator qrScanFo;
+
 
     private APictureCapturingService pictureService;
 
@@ -175,6 +196,7 @@ public class FOMarkAttendance extends AppCompatActivity implements
         buildGoogleApiClient();
 
         connectApiToFetchPartialDetails();
+
     }
 
     private void initialize() {
@@ -183,6 +205,10 @@ public class FOMarkAttendance extends AppCompatActivity implements
         btnSubmitComments.setOnClickListener(this);
         tvAttachImage.setOnClickListener(this);
         fabScan.setOnClickListener(this);
+        btnSiteVisit.setOnClickListener(this);
+        tvNotice.setOnClickListener(this);
+        tvSos.setOnClickListener(this);
+        tvNotice.setSelected(true);
 
         ivBack.setVisibility(View.VISIBLE);
         tvTitle.setVisibility(View.VISIBLE);
@@ -198,6 +224,17 @@ public class FOMarkAttendance extends AppCompatActivity implements
         tvName.setText(getResources().getString(R.string.welcome) + " " + PrefData.readStringPref(PrefData.employee_name));
         tvEmpId.setText(PrefData.readStringPref(PrefData.employee_code));
         tvEmpType.setText(PrefData.readStringPref(PrefData.employee_type));
+        if (PrefData.readStringPref(PrefData.last_checkin_fo).equalsIgnoreCase("")) {
+            tvLastCheckin.setText("Last Check-In:\n" + "0");
+        } else {
+            tvLastCheckin.setText("Last Check-In:\n" + PrefData.readStringPref(PrefData.last_checkin_fo));
+        }
+
+        if (PrefData.readStringPref(PrefData.total_scan_count_fo).equalsIgnoreCase("")) {
+            tvTotalQrScan.setText("Total Scan:\n" + "0");
+        } else {
+            tvTotalQrScan.setText("Total Scan:\n" + PrefData.readStringPref(PrefData.total_scan_count_fo));
+        }
 
         deviceName = Build.MANUFACTURER;
 
@@ -238,73 +275,81 @@ public class FOMarkAttendance extends AppCompatActivity implements
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     progressView.hideLoader();
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            if (response.body().isIsCheckedIn()) {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                                btnCheckin.setText(getString(R.string.checkout));
-                                btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_red));
-                                cardViewComments.setVisibility(View.VISIBLE);
-                                fabScan.setVisibility(View.VISIBLE);
+                                notice = response.body().getNotice();
 
-                                isConveyanceAsked = response.body().isIsConveyanceAsked();
-                                isLiveTrackingEnabled = response.body().isIsLiveTracking();
+                                if (response.body().isIsCheckedIn()) {
 
-                                etCheckinMsg.setText("");
-                                tiCheckinMsg.setVisibility(View.GONE);
+                                    btnCheckin.setText(getString(R.string.checkout));
+                                    btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_red));
+                                    cardViewComments.setVisibility(View.VISIBLE);
+                                    fabScan.setVisibility(View.VISIBLE);
+                                    btnSiteVisit.setVisibility(View.VISIBLE);
 
-                                if (isLiveTrackingEnabled) {
-                                    scheduleServiceForTracking();
-                                }
+                                    isConveyanceAsked = response.body().isIsConveyanceAsked();
+                                    isLiveTrackingEnabled = response.body().isIsLiveTracking();
 
-                            } else {
-                                btnCheckin.setText(getString(R.string.check_in));
-                                btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_green));
-                                etCheckinMsg.setText("");
-                                tiCheckinMsg.setVisibility(View.VISIBLE);
-                                fabScan.setVisibility(View.GONE);
+                                    etCheckinMsg.setText("");
+                                    tiCheckinMsg.setVisibility(View.GONE);
 
-                                if (deviceName.trim().toLowerCase().equalsIgnoreCase("huawei")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("sony")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("asus")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("xiaomi")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("oppo")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("samsung")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("realme")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("letv")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("honor")
-                                        || deviceName.trim().toLowerCase().equalsIgnoreCase("vivo")) {
+                                    if (isLiveTrackingEnabled) {
+                                        scheduleServiceForTracking();
+                                    }
 
-                                    if (response.body().isIsLiveTracking()) {
-                                        if (!PrefData.readBooleanPref(PrefData.autostartup)) {
-                                            showDialogToAskForAutoStartUp();
+                                } else {
+                                    btnCheckin.setText(getString(R.string.check_in));
+                                    btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_green));
+                                    etCheckinMsg.setText("");
+                                    tiCheckinMsg.setVisibility(View.VISIBLE);
+                                    fabScan.setVisibility(View.GONE);
+                                    btnSiteVisit.setVisibility(View.GONE);
+
+                                    if (deviceName.trim().toLowerCase().equalsIgnoreCase("huawei")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("sony")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("asus")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("xiaomi")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("oppo")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("samsung")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("realme")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("letv")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("honor")
+                                            || deviceName.trim().toLowerCase().equalsIgnoreCase("vivo")) {
+
+                                        if (response.body().isIsLiveTracking()) {
+                                            if (!PrefData.readBooleanPref(PrefData.autostartup)) {
+                                                showDialogToAskForAutoStartUp();
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        } else {
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                if (Utils.isMyServiceRunning(LiveTrackingForOperations.class, FOMarkAttendance.this)) {
-                                    stopServiceForTracking();
-                                }
-                                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(FOMarkAttendance.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    if (Utils.isMyServiceRunning(LiveTrackingForOperations.class, FOMarkAttendance.this)) {
+                                        stopServiceForTracking();
+                                    }
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(FOMarkAttendance.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                }
                             }
                         }
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
                 }
+
                 @Override
                 public void onFailure(Call<ApiResponse> call, Throwable t) {
                     progressView.hideLoader();
@@ -321,8 +366,8 @@ public class FOMarkAttendance extends AppCompatActivity implements
 
         DisplayMetrics displaymetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
-        int width = (int) (displaymetrics.widthPixels);
-        int height = (int) (displaymetrics.heightPixels * 0.5);
+        int width = displaymetrics.widthPixels;
+        int height = (int) (displaymetrics.heightPixels * 0.6);
         dialog.getWindow().setLayout(width, height);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
 
@@ -332,7 +377,7 @@ public class FOMarkAttendance extends AppCompatActivity implements
         deny.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.permission_required), Toast.LENGTH_SHORT).show();
+                Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.permission_required), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         });
         allow.setOnClickListener(new View.OnClickListener() {
@@ -372,7 +417,7 @@ public class FOMarkAttendance extends AppCompatActivity implements
                 commentText = etComment.getText().toString();
 
                 if (commentText.equalsIgnoreCase("") && pictureFilePathComment.equalsIgnoreCase("")) {
-                    Toast.makeText(this, R.string.write_comment, Toast.LENGTH_SHORT).show();
+                    Utils.showToast(this, getResources().getString(R.string.write_comment), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (!commentText.equalsIgnoreCase("") && pictureFilePathComment.equalsIgnoreCase("")) {
                     commentType = "TEXT";
                 } else if (commentText.equalsIgnoreCase("") && !pictureFilePathComment.equalsIgnoreCase("")) {
@@ -391,21 +436,123 @@ public class FOMarkAttendance extends AppCompatActivity implements
                 if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
                     sendTakePictureIntentForComment();
                 } else {
-                    Toast.makeText(this, "Your Phone doesn\'t have camera", Toast.LENGTH_SHORT).show();
+                    Utils.showToast(this, "Your Phone doesn\'t have camera", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 }
                 break;
 
             case R.id.fab_scan:
-                isSpyImageTaken=false;
-                qrScanFo.setOrientationLocked(true);
-                qrScanFo.initiateScan();
+                isSpyImageTaken = false;
+                isSpyImageFound = false;
+
+                progressView.showLoader();
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        pictureService.startCapturing(FOMarkAttendance.this);
+                    }
+                }, 200);
+
+                break;
+
+            case R.id.btn_site_visit:
+                startActivity(new Intent(FOMarkAttendance.this, SiteDetailsActivity.class));
+                break;
+
+            case R.id.tv_view_notice:
+                openDialogToShowNotice();
                 break;
 
             case R.id.iv_back:
                 onBackPressed();
                 break;
 
+            case R.id.tv_sos:
+                connectApiToCallSOS();
+                break;
         }
+    }
+
+    private void connectApiToCallSOS() {
+        if (CheckNetworkConnection.isConnection1(FOMarkAttendance.this, true)) {
+            progressView.showLoader();
+
+            Call<ApiResponse> call = apiInterface.sos(PrefData.readStringPref(PrefData.security_token));
+
+            call.enqueue(new Callback<ApiResponse>() {
+                @Override
+                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                    progressView.hideLoader();
+
+                    try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase("success")) {
+
+                                Utils.showToast(FOMarkAttendance.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+
+                            } else {
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(FOMarkAttendance.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        if (response.code() == 400) {
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 500) {
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 404) {
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else {
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        }
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse> call, Throwable t) {
+                    progressView.hideLoader();
+                    t.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private void openDialogToShowNotice() {
+        final Dialog dialog = new Dialog(this);
+        dialog.setCancelable(false);
+        dialog.setContentView(R.layout.dialog_show_notice);
+
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int width = displaymetrics.widthPixels;
+        int height = (int) (displaymetrics.heightPixels * 0.8);
+        dialog.getWindow().setLayout(width, height);
+
+        MyButton done;
+        MyTextview tvNotice;
+
+        done = dialog.findViewById(R.id.btn_dialog_done);
+        tvNotice = dialog.findViewById(R.id.tv_notice);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            tvNotice.setText(Html.fromHtml(notice, Html.FROM_HTML_MODE_COMPACT));
+        } else {
+            tvNotice.setText(Html.fromHtml(notice));
+        }
+
+        done.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
     }
 
     private void connectApiToComment(String commType) {
@@ -441,35 +588,37 @@ public class FOMarkAttendance extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase("success")) {
+                                Utils.showToast(FOMarkAttendance.this, "Posted successfully !!!", Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                etComment.setText("");
+                                tvAttachImage.setImageResource(R.drawable.ic_add_camera);
+                                commentType = "";
+                                commentText = "";
+                                pictureFilePathComment = "";
 
-                        if (response.body().getStatus().equalsIgnoreCase("success")) {
-                            Toast.makeText(FOMarkAttendance.this, "Posted successfully !!!", Toast.LENGTH_SHORT).show();
-                            etComment.setText("");
-                            commentType = "";
-                            tvAttachImage.setImageResource(R.drawable.ic_add_box_black_24dp);
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(FOMarkAttendance.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(FOMarkAttendance.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                }
                             }
                         }
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
-
                     }
-
                 }
 
                 @Override
@@ -487,13 +636,12 @@ public class FOMarkAttendance extends AppCompatActivity implements
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
             sendTakePictureIntentForCheckin();
         } else {
-            Toast.makeText(this, "Your Phone doesn\'t have camera", Toast.LENGTH_SHORT).show();
+            Utils.showToast(this, "Your Phone doesn\'t have camera", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
         }
 
     }
 
     private void sendTakePictureIntentForCheckin() {
-
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         File pictureFileCheckin = null;
         try {
@@ -502,10 +650,43 @@ public class FOMarkAttendance extends AppCompatActivity implements
                 Uri photoURI = FileProvider.getUriForFile(this, "com.trackkers.tmark.fileprovider", pictureFileCheckin);
                 cameraIntent.putExtra(MediaStore.EXTRA_FINISH_ON_COMPLETION, true);
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                cameraIntent.putExtra("android.intent.extras.CAMERA_FACING", 1);
                 startActivityForResult(cameraIntent, REQUEST_CODE_FOR_FRONT_CAMERA);
             }
         } catch (IOException ex) {
-            Toast.makeText(this, "Photo file can't be created, please try again", Toast.LENGTH_SHORT).show();
+            Utils.showToast(this, "Photo file can't be created, please try again", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void rotateBitmap(Bitmap bitmap, String filePath, File fileName) {
+
+        ExifInterface exifInterface = null;
+        try {
+            exifInterface = new ExifInterface(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        int orientation = 0;
+        if (exifInterface != null) {
+            orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+        }
+        Matrix matrix = new Matrix();
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.setRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.setRotate(180);
+                break;
+            default:
+        }
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        try {
+            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(fileName));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
     }
 
@@ -521,18 +702,16 @@ public class FOMarkAttendance extends AppCompatActivity implements
                 startActivityForResult(intent, REQUEST_CODE_FOR_BACK_CAMERA);
             }
         } catch (IOException ex) {
-            Toast.makeText(this, "Photo file can't be created, please try again", Toast.LENGTH_SHORT).show();
+            Utils.showToast(this, "Photo file can't be created, please try again", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
         }
     }
 
     private File getPictureFileCheckin() throws IOException {
-
         String timeStamp = Utils.currentTimeStamp();
         File storageDir = getExternalFilesDir(null);
         File image = File.createTempFile(timeStamp, ".png", storageDir);
         pictureFilePathCheckin = image.getAbsolutePath();
         return image;
-
     }
 
     private File getPictureFileComment() throws IOException {
@@ -579,46 +758,58 @@ public class FOMarkAttendance extends AppCompatActivity implements
                             progressView.hideLoader();
 
                             try {
+                                if (response.body() != null && response.body().getStatus() != null) {
+                                    if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                        Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.checkin_successfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
 
-                                    Toast.makeText(FOMarkAttendance.this, R.string.checkin_successfull, Toast.LENGTH_SHORT).show();
+                                        btnCheckin.setText(getString(R.string.checkout));
+                                        btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_red));
+                                        etCheckinMsg.setText("");
+                                        tiCheckinMsg.setVisibility(View.GONE);
+                                        fabScan.setVisibility(View.VISIBLE);
+                                        btnSiteVisit.setVisibility(View.VISIBLE);
 
-                                    btnCheckin.setText(getString(R.string.checkout));
-                                    btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_red));
-                                    etCheckinMsg.setText("");
-                                    tiCheckinMsg.setVisibility(View.GONE);
-                                    fabScan.setVisibility(View.VISIBLE);
+                                        isConveyanceAsked = response.body().isIsConveyanceAsked();
+                                        isLiveTrackingEnabled = response.body().isIsLiveTracking();
 
-                                    isConveyanceAsked = response.body().isIsConveyanceAsked();
-                                    isLiveTrackingEnabled = response.body().isIsLiveTracking();
+                                        if (isLiveTrackingEnabled) {
+                                            scheduleServiceForTracking();
+                                        }
 
-                                    if (isLiveTrackingEnabled) {
-                                        scheduleServiceForTracking();
-                                    }
+                                        if (PrefData.readStringPref(PrefData.last_checkin_fo).equalsIgnoreCase("")) {
+                                            currentDateAndTime = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
+                                            PrefData.writeStringPref(PrefData.last_checkin_fo, currentDateAndTime);
+                                            tvLastCheckin.setText("Last Check-In:\n" + PrefData.readStringPref(PrefData.last_checkin_fo));
 
-                                    openDialogForSuccessfullCheckin();
+                                        } else {
+                                            currentDateAndTime = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
+                                            PrefData.writeStringPref(PrefData.last_checkin_fo, currentDateAndTime);
 
-                                } else {
+                                            tvLastCheckin.setText("Last Check-In:\n" + PrefData.readStringPref(PrefData.last_checkin_fo));
+                                        }
 
-                                    if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                        Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                        Utils.logout(FOMarkAttendance.this, LoginActivity.class);
+                                        openDialogForSuccessfullCheckin();
+
                                     } else {
-                                        Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+
+                                        if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                            Utils.logout(FOMarkAttendance.this, LoginActivity.class);
+                                        } else {
+                                            Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                        }
                                     }
-
                                 }
-
                             } catch (Exception e) {
                                 if (response.code() == 400) {
-                                    Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 500) {
-                                    Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 404) {
-                                    Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else {
-                                    Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 }
                                 e.printStackTrace();
                             }
@@ -631,7 +822,7 @@ public class FOMarkAttendance extends AppCompatActivity implements
                         }
                     });
                 }
-            }, 500);
+            }, 200);
         }
     }
 
@@ -681,20 +872,25 @@ public class FOMarkAttendance extends AppCompatActivity implements
 
         TextInputEditText distance = dialog.findViewById(R.id.et_distance);
         TextInputEditText fare = dialog.findViewById(R.id.et_fare);
+        ImageView close = dialog.findViewById(R.id.iv_dialog_close);
         Button button = dialog.findViewById(R.id.btn_submit);
+        close.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (distance.getText().toString().equalsIgnoreCase("")) {
-                    Toast.makeText(FOMarkAttendance.this, "Please fill the distance travelled", Toast.LENGTH_SHORT).show();
-
+                    Utils.showToast(FOMarkAttendance.this, "Please fill the distance travelled", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (fare.getText().toString().equalsIgnoreCase("")) {
-                    Toast.makeText(FOMarkAttendance.this, "Please fill the Fare", Toast.LENGTH_SHORT).show();
+                    Utils.showToast(FOMarkAttendance.this, "Please fill the Fare", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else {
                     connectApiToConveyanceDetails(distance.getText().toString(), fare.getText().toString());
+                    dialog.dismiss();
                 }
-
-                dialog.dismiss();
             }
         });
         dialog.show();
@@ -716,38 +912,37 @@ public class FOMarkAttendance extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                            connectApiToCheckoutOperations();
+                                connectApiToCheckoutOperations();
 
-                        } else {
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-
-                                if (Utils.isMyServiceRunning(LiveTrackingForOperations.class, FOMarkAttendance.this)) {
-                                    stopServiceForTracking();
-                                }
-
-                                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(FOMarkAttendance.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+
+                                    if (Utils.isMyServiceRunning(LiveTrackingForOperations.class, FOMarkAttendance.this)) {
+                                        stopServiceForTracking();
+                                    }
+
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(FOMarkAttendance.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                }
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
-
                     }
-
                 }
 
                 @Override
@@ -756,7 +951,6 @@ public class FOMarkAttendance extends AppCompatActivity implements
                     t.printStackTrace();
                 }
             });
-
         }
     }
 
@@ -784,39 +978,38 @@ public class FOMarkAttendance extends AppCompatActivity implements
                             progressView.hideLoader();
 
                             try {
-                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                                    btnCheckin.setText(getString(R.string.check_in));
-                                    btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_green));
-                                    etCheckinMsg.setText("");
-                                    tiCheckinMsg.setVisibility(View.VISIBLE);
-                                    cardViewComments.setVisibility(View.GONE);
-                                    fabScan.setVisibility(View.GONE);
-                                    Toast.makeText(FOMarkAttendance.this, "Checkout Successful", Toast.LENGTH_SHORT).show();
+                                if (response.body() != null && response.body().getStatus() != null) {
+                                    if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                        btnCheckin.setText(getString(R.string.check_in));
+                                        btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_green));
+                                        etCheckinMsg.setText("");
+                                        tiCheckinMsg.setVisibility(View.VISIBLE);
+                                        cardViewComments.setVisibility(View.GONE);
+                                        fabScan.setVisibility(View.GONE);
+                                        btnSiteVisit.setVisibility(View.GONE);
+                                        Utils.showToast(FOMarkAttendance.this, "Checkout Successful", Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                        stopServiceForTracking();
 
-                                    stopServiceForTracking();
+                                        //unregisterReceiver(trackingReceiver);
 
-
-                                    //unregisterReceiver(trackingReceiver);
-
-                                } else {
-
-                                    if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                        Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                        Utils.logout(FOMarkAttendance.this, LoginActivity.class);
                                     } else {
-                                        Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                        if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                            Utils.logout(FOMarkAttendance.this, LoginActivity.class);
+                                        } else {
+                                            Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                        }
                                     }
                                 }
-
                             } catch (Exception e) {
                                 if (response.code() == 400) {
-                                    Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 500) {
-                                    Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 404) {
-                                    Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else {
-                                    Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 }
                                 e.printStackTrace();
                             }
@@ -829,7 +1022,7 @@ public class FOMarkAttendance extends AppCompatActivity implements
                         }
                     });
                 }
-            }, 500);
+            }, 200);
         }
     }
 
@@ -862,13 +1055,13 @@ public class FOMarkAttendance extends AppCompatActivity implements
                             Log.e("lastCurrentLatitude", String.valueOf(currentLatitude));
                             Log.e("lastCurrentLongitude", String.valueOf(currentLongitude));
                         } else {
-                            Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.location_not_detected), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.location_not_detected), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                     }
                 }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.exact_location_not_detected), Toast.LENGTH_SHORT).show();
+                Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.exact_location_not_detected), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         });
     }
@@ -878,9 +1071,11 @@ public class FOMarkAttendance extends AppCompatActivity implements
         super.onActivityResult(requestCode, resultCode, data);
 
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+
         if (result != null) {
             if (result.getContents() == null) {
-                Toast.makeText(this, getResources().getString(R.string.result_not_found), Toast.LENGTH_SHORT).show();
+                progressView.hideLoader();
+                Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.result_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             } else {
                 try {
                     JSONObject jObj = new JSONObject(result.getContents());
@@ -890,129 +1085,144 @@ public class FOMarkAttendance extends AppCompatActivity implements
                     e.printStackTrace();
                 }
                 if (scannedCheckpointId.equalsIgnoreCase("") && scannedCheckpointType.equalsIgnoreCase("")) {
-                    Toast.makeText(this, "Wrong Qr Code Scanned", Toast.LENGTH_LONG).show();
+                    progressView.hideLoader();
+                    Utils.showToast(FOMarkAttendance.this, "Wrong Qr Code Scanned", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else {
-
-                    Handler handler=new Handler();
-                    handler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-
-                            progressView.showLoader();
-                            pictureService.startCapturing(FOMarkAttendance.this);
-
-                        }
-                    },200);
+                    progressView.showLoader();
+                    connectApiToScanQrCodeFO(scannedCheckpointId, scannedCheckpointType, isSpyImageFound);
                 }
             }
-        }
-
-        if (requestCode == REQUEST_CODE_FOR_FRONT_CAMERA) {
+        } else if (requestCode == REQUEST_CODE_FOR_FRONT_CAMERA) {
             if (resultCode == Activity.RESULT_OK) {
-
                 file = new File(pictureFilePathCheckin);
-                try {
-                    Bitmap bitmap = BitmapFactory.decodeFile(file.getPath());
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(file));
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                Bitmap bitmap = BitmapFactory.decodeFile(file.getPath());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    rotateBitmap(bitmap, file.getPath(), file);
+                } else {
+                    try {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(file));
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 connectApiToCheckinOperations();
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                Toast.makeText(this, "Camera Closed", Toast.LENGTH_SHORT).show();
+                Utils.showToast(FOMarkAttendance.this, "Camera Closed", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         } else if (requestCode == REQUEST_CODE_FOR_BACK_CAMERA) {
             if (resultCode == Activity.RESULT_OK) {
-
                 commentFile = new File(pictureFilePathComment);
 
-                try {
-                    Bitmap bitmap = BitmapFactory.decodeFile(commentFile.getPath());
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(commentFile));
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                Bitmap bitmap = BitmapFactory.decodeFile(commentFile.getPath());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    rotateBitmap(bitmap, commentFile.getPath(), commentFile);
+                } else {
+                    try {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(commentFile));
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
                 }
 
-                Bitmap myBitmap = BitmapFactory.decodeFile(commentFile.getAbsolutePath());
+                Bitmap myBitmap = BitmapFactory.decodeFile(commentFile.getPath());
                 tvAttachImage.setImageBitmap(myBitmap);
             } else {
-                Toast.makeText(this, "Camera Closed", Toast.LENGTH_SHORT).show();
+                commentType = "";
+                commentText = "";
+                pictureFilePathComment = "";
+                Utils.showToast(FOMarkAttendance.this, "Camera Closed", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         } else if (requestCode == REQUEST_CHECK_SETTINGS) {
             if (resultCode == Activity.RESULT_OK) {
                 Log.e("gpsSucess", "gpsSucess");
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                Toast.makeText(this, R.string.enable_gps, Toast.LENGTH_SHORT).show();
+                Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.enable_gps), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 finish();
             }
         }
     }
 
-    private void connectApiToScanQrCodeFO(String scannedCheckpointId, String scannedCheckpointType,boolean isFilePresent) {
+    private void connectApiToScanQrCodeFO(String scannedCheckpointId, String scannedCheckpointType, boolean isFilePresent) {
         if (CheckNetworkConnection.isConnection1(FOMarkAttendance.this, true)) {
 
             if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
                 getLastKnownLocation();
-            } else {
+            }
 
-                MultipartBody.Part filePart = null;
-                if (isFilePresent) {
-                    filePart = MultipartBody.Part.createFormData("image", spyFile.getName(), RequestBody.create(MediaType.parse("image/*"), spyFile));
-                } else {
-                    filePart = MultipartBody.Part.createFormData("image", "", RequestBody.create(MediaType.parse("text/plain"), ""));
+            MultipartBody.Part filePart = null;
+            if (isFilePresent) {
+                filePart = MultipartBody.Part.createFormData("image", spyFile.getName(), RequestBody.create(MediaType.parse("image/*"), spyFile));
+            } else {
+                filePart = MultipartBody.Part.createFormData("image", "", RequestBody.create(MediaType.parse("text/plain"), ""));
+            }
+
+            RequestBody token = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.security_token));
+            RequestBody checkpointType = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointType);
+            RequestBody checkpointId = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointId);
+            RequestBody latitude = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(currentLatitude));
+            RequestBody longitude = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(currentLongitude));
+
+            Call<ApiResponse> call = apiInterface.operationVisitByScanQr(
+                    token,
+                    checkpointType,
+                    checkpointId,
+                    latitude,
+                    longitude,
+                    filePart
+            );
+
+            call.enqueue(new Callback<ApiResponse>() {
+                @Override
+                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                    progressView.hideLoader();
+                    try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                Utils.showToast(FOMarkAttendance.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+
+                                if (PrefData.readStringPref(PrefData.total_scan_count_fo).equalsIgnoreCase("")) {
+                                    totalScannedQr++;
+                                    PrefData.writeStringPref(PrefData.total_scan_count_fo, totalScannedQr + "");
+                                    tvTotalQrScan.setText("Total Scan:\n" + PrefData.readStringPref(PrefData.total_scan_count_fo));
+
+                                } else {
+                                    totalScannedQr = Integer.parseInt(PrefData.readStringPref(PrefData.total_scan_count_fo));
+                                    totalScannedQr++;
+                                    PrefData.writeStringPref(PrefData.total_scan_count_fo, totalScannedQr + "");
+                                    tvTotalQrScan.setText("Total Scan:\n" + PrefData.readStringPref(PrefData.total_scan_count_fo));
+                                }
+
+                            } else {
+
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(FOMarkAttendance.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        if (response.code() == 400) {
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 500) {
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 404) {
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else {
+                            Utils.showToast(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        }
+                        e.printStackTrace();
+                    }
                 }
 
-                RequestBody token = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.security_token));
-                RequestBody checkpointType = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointType);
-                RequestBody checkpointId = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointId);
-                RequestBody latitude = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(currentLatitude));
-                RequestBody longitude = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(currentLongitude));
-
-                Call<ApiResponse> call = apiInterface.operationVisitByScanQr(
-                        token,
-                        checkpointType,
-                        checkpointId,
-                        latitude,
-                        longitude,
-                        filePart
-                );
-
-                call.enqueue(new Callback<ApiResponse>() {
-                    @Override
-                    public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
-                        progressView.hideLoader();
-                        try {
-
-                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                                Toast.makeText(FOMarkAttendance.this, response.body().getMsg(), Toast.LENGTH_LONG).show();
-                            } else {
-                                Utils.showSnackBar(rootFoAttendance, response.body().getMsg(), FOMarkAttendance.this);
-                            }
-
-                        } catch (Exception e) {
-                            if (response.code() == 400) {
-                                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
-                            } else if (response.code() == 500) {
-                                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
-                            } else if (response.code() == 404) {
-                                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(FOMarkAttendance.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
-                            }
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<ApiResponse> call, Throwable t) {
-                        progressView.hideLoader();
-                        t.printStackTrace();
-                    }
-                });
-            }
+                @Override
+                public void onFailure(Call<ApiResponse> call, Throwable t) {
+                    progressView.hideLoader();
+                    t.printStackTrace();
+                }
+            });
         }
     }
 
@@ -1079,8 +1289,6 @@ public class FOMarkAttendance extends AppCompatActivity implements
             if (mLastLocation.getAccuracy() <= 100) {
                 currentLatitude = mLastLocation.getLatitude();
                 currentLongitude = mLastLocation.getLongitude();
-                Log.e("currentLatitude", String.valueOf(currentLatitude));
-                Log.e("currentLongitude", String.valueOf(currentLongitude));
             }
         }
     }
@@ -1141,28 +1349,40 @@ public class FOMarkAttendance extends AppCompatActivity implements
 
     @Override
     public void onCaptureDone(String pictureUrl, byte[] pictureData) {
-        if (!isSpyImageTaken){
+        if (!isSpyImageTaken) {
             if (pictureData != null && pictureUrl != null) {
                 spyFile = new File(pictureUrl);
-                connectApiToScanQrCodeFO(scannedCheckpointId, scannedCheckpointType,true);
-                isSpyImageTaken=true;
-            }else {
-                connectApiToScanQrCodeFO(scannedCheckpointId, scannedCheckpointType,false);
-                isSpyImageTaken=true;
+                qrScanFo.setOrientationLocked(true);
+                qrScanFo.initiateScan();
+                isSpyImageTaken = true;
+                isSpyImageFound = true;
+            } else {
+                qrScanFo.setOrientationLocked(true);
+                qrScanFo.initiateScan();
+                isSpyImageTaken = true;
+                isSpyImageFound = false;
             }
         }
     }
 
     @Override
     public void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken) {
-        if (!isSpyImageTaken){
+        if (!isSpyImageTaken) {
             if (picturesTaken != null && !picturesTaken.isEmpty()) {
                 spyFile = new File(picturesTaken.lastEntry().getKey());
-                connectApiToScanQrCodeFO(scannedCheckpointId, scannedCheckpointType,true);
-                isSpyImageTaken=true;
-            }else{
-                connectApiToScanQrCodeFO(scannedCheckpointId, scannedCheckpointType,false);
-                isSpyImageTaken=true;
+                //progressView.hideLoader();
+                qrScanFo.setOrientationLocked(true);
+                qrScanFo.initiateScan();
+                //connectApiToScanQrCodeFO(scannedCheckpointId, scannedCheckpointType,true);
+                isSpyImageTaken = true;
+                isSpyImageFound = true;
+            } else {
+                //progressView.hideLoader();
+                qrScanFo.setOrientationLocked(true);
+                qrScanFo.initiateScan();
+                //connectApiToScanQrCodeFO(scannedCheckpointId, scannedCheckpointType,false);
+                isSpyImageTaken = true;
+                isSpyImageFound = false;
             }
         }
     }

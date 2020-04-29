@@ -29,7 +29,8 @@ public interface ApiInterface {
     @POST("updatePassword")
     Call<ApiResponse> updatePassword(@Field("token") String token,
                                      @Field("currentPassword") String currentPassword,
-                                     @Field("newPassword") String newPassword);
+                                     @Field("newPassword") String newPassword
+    );
 
     @FormUrlEncoded
     @POST("pendingRoutes")
@@ -48,15 +49,14 @@ public interface ApiInterface {
                                            @Field("isLiveTrackingEnable") String isLiveTrackingEnable,
                                            @Field("empcode") String empcode,
                                            @Field("password") String password,
-                                           @Field("type") String type);
-
+                                           @Field("type") String type
+    );
 
     @FormUrlEncoded
     @POST("allCheckpointDetailsForRoute")
     Call<ApiResponse> AllCheckpoints(@Field("token") String token,
                                      @Field("routeID") String routeID
     );
-
 
     @FormUrlEncoded
     @POST("verifyCheckPoint")
@@ -93,7 +93,12 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("siteVisit/getFoSiteSurvey")
     Call<SurveyResponse> getFoSiteSurvey(@Field("token") String token,
-                                         @Field("suid") String suid);
+                                         @Field("suid") String suid
+    );
+
+    @FormUrlEncoded
+    @POST("siteVisit/siteInstructionApi")
+    Call<ApiResponse> siteInstruction(@Field("suid") String suid);
 
 
     @FormUrlEncoded
@@ -103,7 +108,8 @@ public interface ApiInterface {
                                    @Field("survuid") String survuid,
                                    @Field("visitEndLatitude") String visitEndLatitude,
                                    @Field("visitEndLongitude") String visitEndLongitude,
-                                   @Field("data") String responseData);
+                                   @Field("data") String responseData
+    );
 
 
     @Multipart
@@ -115,7 +121,6 @@ public interface ApiInterface {
                                       @Part MultipartBody.Part selfie
     );
 
-
     @FormUrlEncoded
     @POST("getAllGuardsListInFieldOffice")
     Call<ApiResponse> getAllGuardsListInFieldOffice(@Field("token") String token);
@@ -123,18 +128,20 @@ public interface ApiInterface {
     @FormUrlEncoded
     @POST("fielOfficerToAssignGuard")
     Call<ApiResponse> fielOfficerToAssignGuard(@Field("euid") String euid,
-                                               @Field("ruid") String ruid);
+                                               @Field("ruid") String ruid
+    );
 
     @FormUrlEncoded
     @POST("partialListGuard")
     Call<ApiResponse> partialListGuard(@Field("token") String token,
-                                       @Field("routeId") String routeId);
+                                       @Field("routeId") String routeId
+    );
 
     @FormUrlEncoded
     @POST("unAssignGuardToRoute")
     Call<ApiResponse> unassignGuardToRoute(@Field("empId") String empId,
-                                           @Field("routeId") String routeId);
-
+                                           @Field("routeId") String routeId
+    );
 
     @FormUrlEncoded
     @POST("getFoVerificationHistory")
@@ -162,7 +169,6 @@ public interface ApiInterface {
             @Part("batteryStatus") RequestBody batteryStatus
     );
 
-
     @FormUrlEncoded
     @POST("guardCheckOut")
     Call<ApiResponse> GuardCheckOut(@Field("token") String token,
@@ -171,7 +177,6 @@ public interface ApiInterface {
                                     @Field("longitude") String longitude,
                                     @Field("batteryStatus") String batteryStatus
     );
-
 
     @Multipart
     @POST("guardScanCheckpoint")
@@ -200,7 +205,6 @@ public interface ApiInterface {
                                         @Field("routeId") String routeId
     );
 
-
     @FormUrlEncoded
     @POST("routeSpecificMultipleGuardLogin")
     Call<ApiResponseOperations> MultipleGuardsLogin(
@@ -209,13 +213,11 @@ public interface ApiInterface {
             @Field("routeCode") String routeCode
     );
 
-
     @FormUrlEncoded
     @POST("multipleGuardPartialDetails")
     Call<ApiResponseOperations> multipleGuardPartialDetails(@Field("euid") String euid,
                                                             @Field("routeId") String routeID
     );
-
 
     @Multipart
     @POST("guardMultipleCheckIn")
@@ -228,7 +230,6 @@ public interface ApiInterface {
             @Part("deviceId") RequestBody deviceId,
             @Part("batteryStatus") RequestBody batteryStatus
     );
-
 
     @FormUrlEncoded
     @POST("guardMultipleCheckOut")
@@ -245,7 +246,6 @@ public interface ApiInterface {
                                            @Field("ruid") String ruid,
                                            @Field("date") String date
     );
-
 
     @FormUrlEncoded
     @POST("operationalPartial")
@@ -270,7 +270,6 @@ public interface ApiInterface {
             @Part("message") RequestBody message,
             @Part MultipartBody.Part selfie
     );
-
 
     @Multipart
     @POST("communication")
@@ -298,7 +297,6 @@ public interface ApiInterface {
             @Field("fare") String fare
     );
 
-
     @FormUrlEncoded
     @POST("operationalCheckOut")
     Call<ApiResponse> operationalCheckOut(
@@ -308,10 +306,15 @@ public interface ApiInterface {
             @Field("batteryStatus") String batteryStatus
     );
 
-
     @FormUrlEncoded
     @POST("logoutEmp")
     Call<ApiResponse> logoutEmp(
+            @Field("token") String token
+    );
+
+    @FormUrlEncoded
+    @POST("sos")
+    Call<ApiResponse> sos(
             @Field("token") String token
     );
 

@@ -10,8 +10,6 @@ public class FireIDService extends FirebaseMessagingService {
     public void onNewToken(String token) {
         super.onNewToken(token);
         Log.e("Refreshed token: ", token);
-
-
     }
 
    /* @Override

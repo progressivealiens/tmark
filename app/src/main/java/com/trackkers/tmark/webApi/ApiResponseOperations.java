@@ -158,6 +158,15 @@ public class ApiResponseOperations {
             private String employeeName;
             private int employeeId;
             private String empCode;
+            private boolean isCheckedIn;
+
+
+            public EmployeesBean(String employeeName, int employeeId, String empCode, boolean isCheckedIn) {
+                this.employeeName = employeeName;
+                this.employeeId = employeeId;
+                this.empCode = empCode;
+                this.isCheckedIn = isCheckedIn;
+            }
 
             public String getEmpCode() {
                 return empCode;
@@ -181,6 +190,14 @@ public class ApiResponseOperations {
 
             public void setEmployeeId(int employeeId) {
                 this.employeeId = employeeId;
+            }
+
+            public boolean isIsCheckedIn() {
+                return isCheckedIn;
+            }
+
+            public void setIsCheckedIn(boolean isCheckedIn) {
+                this.isCheckedIn = isCheckedIn;
             }
         }
     }

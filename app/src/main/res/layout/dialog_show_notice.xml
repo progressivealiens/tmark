@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorLightCyan"
+        android:orientation="vertical">
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Notice Board"
+            android:paddingStart="@dimen/dp_15"
+            android:paddingEnd="@dimen/dp_15"
+            android:paddingTop="@dimen/dp_15"
+            android:paddingBottom="@dimen/dp_05"
+            android:textColor="@color/colorWhite"
+            android:textAllCaps="true"
+            android:textSize="@dimen/sp_18"
+            android:textStyle="bold" />
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="View daily updates from organization"
+            android:paddingTop="@dimen/dp_05"
+            android:paddingBottom="@dimen/dp_10"
+            android:paddingStart="@dimen/dp_10"
+            android:paddingEnd="@dimen/dp_10"
+            android:textColor="@color/colorWhite"
+            android:textSize="@dimen/sp_16"
+            android:textStyle="bold" />
+
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:layout_weight="1"
+        android:layout_margin="@dimen/dp_05"
+        android:background="@drawable/rect_border_textview"
+        android:fadeScrollbars="false">
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:id="@+id/tv_notice"
+            android:padding="@dimen/dp_15"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </ScrollView>
+
+    <com.trackkers.tmark.customviews.MyButton
+        android:id="@+id/btn_dialog_done"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/dp_20"
+        android:layout_marginEnd="@dimen/dp_20"
+        android:layout_marginTop="@dimen/dp_10"
+        android:layout_marginBottom="@dimen/dp_10"
+        android:background="@drawable/selector_button"
+        android:text="@string/ok"
+        android:textColor="@drawable/text_selector" />
+
+</LinearLayout>

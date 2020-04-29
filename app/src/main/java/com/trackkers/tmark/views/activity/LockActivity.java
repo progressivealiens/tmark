@@ -14,6 +14,7 @@ import com.trackkers.tmark.R;
 import com.trackkers.tmark.customviews.MyButton;
 import com.trackkers.tmark.helper.PinEntryEditText;
 import com.trackkers.tmark.helper.PrefData;
+import com.trackkers.tmark.helper.Utils;
 
 import java.util.Locale;
 
@@ -82,7 +83,7 @@ public class LockActivity extends AppCompatActivity implements View.OnClickListe
                     } else {
                         etPassword.setText("");
                         enteredPassword = "";
-                        Toast.makeText(LockActivity.this, getResources().getString(R.string.wrong_password), Toast.LENGTH_SHORT).show();
+                        Utils.showToast(LockActivity.this, getResources().getString(R.string.wrong_password), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                     }
                 }
             }

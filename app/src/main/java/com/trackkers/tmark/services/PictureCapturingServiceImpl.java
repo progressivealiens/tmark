@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -28,7 +29,6 @@ import androidx.core.app.ActivityCompat;
 
 import com.trackkers.tmark.helper.PictureCapturingListener;
 import com.trackkers.tmark.helper.Utils;
-import com.trackkers.tmark.views.activity.guard.GCheckpoints;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -41,7 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.TreeMap;
-import java.util.UUID;
 
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class PictureCapturingServiceImpl extends APictureCapturingService {
@@ -51,6 +50,7 @@ public class PictureCapturingServiceImpl extends APictureCapturingService {
     private CameraDevice cameraDevice;
     private ImageReader imageReader;
     String timeStamp = "";
+    Size[] jpegSizes = null;
 
     /***
      * camera ids queue.
@@ -141,10 +141,10 @@ public class PictureCapturingServiceImpl extends APictureCapturingService {
         }
     };
 
-    private final ImageReader.OnImageAvailableListener onImageAvailableListener = (ImageReader imReader) -> {
-        final Image image = imReader.acquireLatestImage();
-        final ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-        final byte[] bytes = new byte[buffer.capacity()];
+    private ImageReader.OnImageAvailableListener onImageAvailableListener = (ImageReader imReader) -> {
+        Image image = imReader.acquireLatestImage();
+        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        byte[] bytes = new byte[buffer.capacity()];
         buffer.get(bytes);
         try {
             saveImageToDisk(bytes);
@@ -199,7 +199,7 @@ public class PictureCapturingServiceImpl extends APictureCapturingService {
             Log.e(TAG, "camera in error, int code " + error);
             if (cameraDevice != null && !cameraClosed) {
                 cameraDevice.close();
-                Log.e(TAG,"camera closed Now");
+                Log.e(TAG, "camera closed Now");
             }
         }
     };
@@ -209,20 +209,29 @@ public class PictureCapturingServiceImpl extends APictureCapturingService {
             Log.e(TAG, "cameraDevice is null");
             return;
         }
+
         final CameraCharacteristics characteristics;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+
             characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
-            Size[] jpegSizes = null;
             StreamConfigurationMap streamConfigurationMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if (streamConfigurationMap != null) {
                 jpegSizes = streamConfigurationMap.getOutputSizes(ImageFormat.JPEG);
             }
-            final boolean jpegSizesNotEmpty = jpegSizes != null && 0 < jpegSizes.length;
-            int width = jpegSizesNotEmpty ? jpegSizes[0].getWidth() : 640;
-            int height = jpegSizesNotEmpty ? jpegSizes[0].getHeight() : 480;
+            int width = Integer.MAX_VALUE, height = Integer.MAX_VALUE;
 
-            final ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
-            final List<Surface> outputSurfaces = new ArrayList<>();
+            for (int i = 0; i < jpegSizes.length; i++) {
+                int currWidth = jpegSizes[i].getWidth();
+                int currHeight = jpegSizes[i].getHeight();
+                if ((currWidth < width && currHeight < height) && (currWidth > 2048 && currHeight > 1536)) {    // at least 3M pixels
+                    width = currWidth;
+                    height = currHeight;
+                    break;
+                }
+            }
+
+            final ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 10);
+            final List<Surface> outputSurfaces = new ArrayList<>(2);
             outputSurfaces.add(reader.getSurface());
             final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(reader.getSurface());
@@ -242,6 +251,12 @@ public class PictureCapturingServiceImpl extends APictureCapturingService {
 
                         @Override
                         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                            try {
+                                session.stopRepeating();
+                            } catch (CameraAccessException e) {
+                                Log.e(TAG, e + "");
+                                e.printStackTrace();
+                            }
                         }
                     }
                     , null);
@@ -254,19 +269,20 @@ public class PictureCapturingServiceImpl extends APictureCapturingService {
     private void saveImageToDisk(final byte[] bytes) throws IOException {
         timeStamp = Utils.currentTimeStamp();
         File file = new File(context.getExternalFilesDir(null), timeStamp + ".png");
-
-        Bitmap photo = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, null);
+        Matrix matrix = new Matrix();
+        matrix.postRotate(180);
+        Bitmap photo = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+        Bitmap rotatedBitmap = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        photo.compress(Bitmap.CompressFormat.JPEG, 18, out);
+        rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 18, out);
         OutputStream output = null;
         try {
             output = new FileOutputStream(file);
             output.write(out.toByteArray());
             this.picturesTaken.put(file.getPath(), bytes);
-        } finally {
-            if (null != output) {
-                output.close();
-            }
+            output.close();
+        } catch (Exception e) {
+            Log.e(TAG, "" + e);
         }
     }
 

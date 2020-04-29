@@ -1,7 +1,11 @@
 package com.trackkers.tmark.views.activity.operations;
 
+import android.app.Activity;
+import android.app.Dialog;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -62,12 +66,11 @@ public class ViewDocuments extends AppCompatActivity {
     @BindView(R.id.iv_driving)
     ImageView ivDriving;
 
-
     PrefData prefData;
     ApiInterface apiInterface;
     ProgressView progressView;
 
-
+    String medicalImage="",unacImage="",esicImage="",aadharImage="",drivingImage="";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +86,41 @@ public class ViewDocuments extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 onBackPressed();
+            }
+        });
+
+        ivMedical.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openDialogToShowImage(Utils.BASE_IMAGE_MEDICAL + medicalImage);
+            }
+        });
+
+        ivUanc.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openDialogToShowImage(Utils.BASE_IMAGE_UANC + unacImage);
+            }
+        });
+
+        ivEsic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openDialogToShowImage(Utils.BASE_IMAGE_ESIC + esicImage);
+            }
+        });
+
+        ivAadhar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openDialogToShowImage(Utils.BASE_IMAGE_ADHAR + aadharImage);
+            }
+        });
+
+        ivDriving.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openDialogToShowImage(Utils.BASE_IMAGE_DRIVING + drivingImage);
             }
         });
     }
@@ -109,74 +147,79 @@ public class ViewDocuments extends AppCompatActivity {
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     progressView.hideLoader();
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                if (response.body().getData().get(0).getMedical().equalsIgnoreCase("")) {
+                                    tvMedical.setText(getString(R.string.medical) + " :- " + getResources().getString(R.string.no_documents));
+                                    ivMedical.setVisibility(View.GONE);
+                                } else {
+                                    ivMedical.setVisibility(View.VISIBLE);
+                                    medicalImage = response.body().getData().get(0).getMedical();
+                                    Picasso.get().load(Utils.BASE_IMAGE_MEDICAL + medicalImage).placeholder(R.drawable.progress_animation).into(ivMedical);
+                                }
 
-                            if (response.body().getData().get(0).getMedical().equalsIgnoreCase("")) {
+                                if (response.body().getData().get(0).getUAN().equalsIgnoreCase("")) {
+                                    tvUanc.setText(getString(R.string.uanc) + " :- " + getResources().getString(R.string.no_documents));
+                                    ivUanc.setVisibility(View.GONE);
+                                } else {
+                                    ivUanc.setVisibility(View.VISIBLE);
+                                    unacImage = response.body().getData().get(0).getUAN();
+                                    Picasso.get().load(Utils.BASE_IMAGE_UANC + unacImage).placeholder(R.drawable.progress_animation).into(ivUanc);
+                                }
+
+                                if (response.body().getData().get(0).getESIC().equalsIgnoreCase("")) {
+                                    tvEsic.setText(getString(R.string.esic) + " :- " + getResources().getString(R.string.no_documents));
+                                    ivEsic.setVisibility(View.GONE);
+                                } else {
+                                    ivEsic.setVisibility(View.VISIBLE);
+                                    esicImage = response.body().getData().get(0).getESIC();
+                                    Picasso.get().load(Utils.BASE_IMAGE_ESIC + esicImage).placeholder(R.drawable.progress_animation).into(ivEsic);
+                                }
+
+                                if (response.body().getData().get(0).getAdhaarCard().equalsIgnoreCase("")) {
+                                    tvAadhar.setText(getString(R.string.aadhar) + " :- " + getResources().getString(R.string.no_documents));
+                                    ivAadhar.setVisibility(View.GONE);
+                                } else {
+                                    ivAadhar.setVisibility(View.VISIBLE);
+                                    aadharImage = response.body().getData().get(0).getAdhaarCard();
+                                    Picasso.get().load(Utils.BASE_IMAGE_ADHAR + aadharImage).placeholder(R.drawable.progress_animation).into(ivAadhar);
+                                }
+
+                                if (response.body().getData().get(0).getDrivingLicence().equalsIgnoreCase("")) {
+                                    tvDriving.setText(getString(R.string.driving) + " :- " + getResources().getString(R.string.no_documents));
+                                    ivDriving.setVisibility(View.GONE);
+                                } else {
+                                    ivDriving.setVisibility(View.VISIBLE);
+                                    drivingImage = response.body().getData().get(0).getDrivingLicence();
+                                    Picasso.get().load(Utils.BASE_IMAGE_DRIVING + drivingImage).placeholder(R.drawable.progress_animation).into(ivDriving);
+                                }
+
+
+                            } else {
                                 tvMedical.setText(getString(R.string.medical) + " :- " + getResources().getString(R.string.no_documents));
-                                ivMedical.setVisibility(View.GONE);
-                            } else {
-                                ivMedical.setVisibility(View.VISIBLE);
-                                Picasso.get().load(Utils.BASE_IMAGE_MEDICAL + response.body().getData().get(0).getMedical()).placeholder(R.drawable.progress_animation).into(ivMedical);
-                            }
-
-                            if (response.body().getData().get(0).getUAN().equalsIgnoreCase("")) {
                                 tvUanc.setText(getString(R.string.uanc) + " :- " + getResources().getString(R.string.no_documents));
-                                ivUanc.setVisibility(View.GONE);
-                            } else {
-                                ivUanc.setVisibility(View.VISIBLE);
-                                Picasso.get().load(Utils.BASE_IMAGE_UANC + response.body().getData().get(0).getUAN()).placeholder(R.drawable.progress_animation).into(ivUanc);
-                            }
-
-                            if (response.body().getData().get(0).getESIC().equalsIgnoreCase("")) {
                                 tvEsic.setText(getString(R.string.esic) + " :- " + getResources().getString(R.string.no_documents));
-                                ivEsic.setVisibility(View.GONE);
-                            } else {
-                                ivEsic.setVisibility(View.VISIBLE);
-                                Picasso.get().load(Utils.BASE_IMAGE_ESIC + response.body().getData().get(0).getESIC()).placeholder(R.drawable.progress_animation).into(ivEsic);
-                            }
-
-                            if (response.body().getData().get(0).getAdhaarCard().equalsIgnoreCase("")) {
                                 tvAadhar.setText(getString(R.string.aadhar) + " :- " + getResources().getString(R.string.no_documents));
-                                ivAadhar.setVisibility(View.GONE);
-                            } else {
-                                ivAadhar.setVisibility(View.VISIBLE);
-                                Picasso.get().load(Utils.BASE_IMAGE_ADHAR + response.body().getData().get(0).getAdhaarCard()).placeholder(R.drawable.progress_animation).into(ivAadhar);
-                            }
-
-                            if (response.body().getData().get(0).getDrivingLicence().equalsIgnoreCase("")) {
                                 tvDriving.setText(getString(R.string.driving) + " :- " + getResources().getString(R.string.no_documents));
-                                ivDriving.setVisibility(View.GONE);
-                            } else {
-                                ivDriving.setVisibility(View.VISIBLE);
-                                Picasso.get().load(Utils.BASE_IMAGE_DRIVING + response.body().getData().get(0).getDrivingLicence()).placeholder(R.drawable.progress_animation).into(ivDriving);
-                            }
 
-
-                        } else {
-                            tvMedical.setText(getString(R.string.medical) + " :- " + getResources().getString(R.string.no_documents));
-                            tvUanc.setText(getString(R.string.uanc) + " :- " + getResources().getString(R.string.no_documents));
-                            tvEsic.setText(getString(R.string.esic) + " :- " + getResources().getString(R.string.no_documents));
-                            tvAadhar.setText(getString(R.string.aadhar) + " :- " + getResources().getString(R.string.no_documents));
-                            tvDriving.setText(getString(R.string.driving) + " :- " + getResources().getString(R.string.no_documents));
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(ViewDocuments.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(ViewDocuments.this, LoginActivity.class);
-                            } else {
-                                Utils.showSnackBar(rootDocuments, response.body().getMsg(), ViewDocuments.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(ViewDocuments.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(ViewDocuments.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(ViewDocuments.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(ViewDocuments.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ViewDocuments.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(ViewDocuments.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ViewDocuments.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink),getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(ViewDocuments.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ViewDocuments.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(ViewDocuments.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ViewDocuments.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
@@ -190,6 +233,32 @@ public class ViewDocuments extends AppCompatActivity {
                 }
             });
         }
+    }
+
+    private void openDialogToShowImage(String image) {
+        final Dialog dialog = new Dialog(this);
+        dialog.setCancelable(false);
+        dialog.setContentView(R.layout.dialog_image_layout);
+
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int width = displaymetrics.widthPixels;
+        int height = displaymetrics.heightPixels;
+        dialog.getWindow().setLayout(width, height);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        Button btnDone;
+        ImageView zoomedImage = dialog.findViewById(R.id.iv_selfie);
+        btnDone = dialog.findViewById(R.id.btn_done);
+        Picasso.get().load(image).placeholder(R.drawable.progress_animation).into(zoomedImage);
+
+        btnDone.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.cancel();
+            }
+        });
+
+        dialog.show();
     }
 
     @Override

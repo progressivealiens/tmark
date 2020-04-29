@@ -3,29 +3,60 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:id="@+id/root_employee_main"
     tools:context=".views.activity.bulk_guard.BulkGuardMainActivity">
-
-
-    <com.trackkers.tmark.customviews.MyTextview
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/all_guard_list"
-        android:textSize="@dimen/sp_20"
-        android:textStyle="bold"
-        android:textColor="@color/colorBlack"
-        android:padding="@dimen/dp_10"/>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_container_guard"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_all_guard"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <com.trackkers.tmark.customviews.MyTextview
+                android:id="@+id/tv_site_all_guard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/all_guard_list"
+                android:textSize="@dimen/sp_20"
+                android:textStyle="bold"
+                android:textColor="@color/colorBlack"
+                android:padding="@dimen/dp_10"
+                android:gravity="center"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/dp_10"
+                app:hintEnabled="true"
+                android:theme="@style/TextLabel">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_search_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="@dimen/dp_10"
+                    android:drawableStart="@drawable/ic_person_primary_24dp"
+                    android:drawableEnd="@drawable/ic_close_black_24dp"
+                    android:fontFamily="@font/aver_bold"
+                    android:hint="@string/search_by_guard_name_code"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textSize="@dimen/sp_15" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_all_guard"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
+
+
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

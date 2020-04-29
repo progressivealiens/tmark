@@ -43,7 +43,6 @@
 
     </LinearLayout>
 
-
     <com.trackkers.tmark.customviews.MyTextview
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -55,7 +54,7 @@
         android:textSize="@dimen/sp_20"
         android:textStyle="bold|italic" />
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_scan_history"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

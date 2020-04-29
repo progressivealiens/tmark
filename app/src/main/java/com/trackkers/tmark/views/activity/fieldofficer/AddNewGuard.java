@@ -110,7 +110,7 @@ public class AddNewGuard extends AppCompatActivity {
             public void onClick(View v) {
 
                 if (guardType.equalsIgnoreCase("")) {
-                    Toast.makeText(AddNewGuard.this, getResources().getString(R.string.guard_type), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.guard_type), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 }
 
                 if (cbLiveTracking.isChecked()) {
@@ -120,19 +120,19 @@ public class AddNewGuard extends AppCompatActivity {
                 }
 
                 if (Validation.nullValidator(etEmpCode.getText().toString())) {
-                    Toast.makeText(AddNewGuard.this, getResources().getString(R.string.enter_employee_code), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.enter_employee_code), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (Validation.nullValidator(etName.getText().toString())) {
-                    Toast.makeText(AddNewGuard.this, getResources().getString(R.string.enter_guard_name), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.enter_guard_name), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (Validation.nullValidator(etMobileNumber.getText().toString())) {
-                    Toast.makeText(AddNewGuard.this, getResources().getString(R.string.enter_mobile_number), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.enter_mobile_number), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (!Validation.mobileValidator(etMobileNumber.getText().toString())) {
-                    Toast.makeText(AddNewGuard.this, getResources().getString(R.string.mobile_number_10_digits), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.mobile_number_10_digits), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (Validation.nullValidator(etAddress.getText().toString())) {
-                    Toast.makeText(AddNewGuard.this, getResources().getString(R.string.enter_address), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.enter_address), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (Validation.nullValidator(etPassword.getText().toString())) {
-                    Toast.makeText(AddNewGuard.this, getResources().getString(R.string.fill_password), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.fill_password), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (!Validation.passValidator(etPassword.getText().toString())) {
-                    Toast.makeText(AddNewGuard.this, getResources().getString(R.string.password_6_digits), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.password_6_digits), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else {
                     connectApiToAddGuard(etEmpCode.getText().toString(), etName.getText().toString(), etMobileNumber.getText().toString(), etAddress.getText().toString(), etPassword.getText().toString());
                 }
@@ -213,36 +213,34 @@ public class AddNewGuard extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            Toast.makeText(AddNewGuard.this, getResources().getString(R.string.guard_added_successfully), Toast.LENGTH_SHORT).show();
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                Utils.showToast(AddNewGuard.this, getResources().getString(R.string.guard_added_successfully), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
 
-                            etEmpCode.setText("");
-                            etName.setText("");
-                            etMobileNumber.setText("");
-                            etAddress.setText("");
-                            etPassword.setText("");
-                            cbLiveTracking.setChecked(false);
-
-
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(AddNewGuard.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(AddNewGuard.this, LoginActivity.class);
+                                etEmpCode.setText("");
+                                etName.setText("");
+                                etMobileNumber.setText("");
+                                etAddress.setText("");
+                                etPassword.setText("");
+                                cbLiveTracking.setChecked(false);
                             } else {
-                                Utils.showSnackBar(rootAddGuard, response.body().getMsg(), AddNewGuard.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(AddNewGuard.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(AddNewGuard.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(AddNewGuard.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(AddNewGuard.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AddNewGuard.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(AddNewGuard.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AddNewGuard.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(AddNewGuard.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AddNewGuard.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(AddNewGuard.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AddNewGuard.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }

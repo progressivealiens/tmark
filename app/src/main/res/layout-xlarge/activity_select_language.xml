@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".views.activity.SelectLanguageActivity">
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Please choose a language for the app"
+        android:textColor="@color/colorPrimary"
+        android:textSize="@dimen/sp_22"
+        android:textStyle="bold"
+        android:layout_marginTop="@dimen/dp_20"/>
+
+    <RadioGroup
+        android:id="@+id/rg_select_language"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:layout_weight="1">
+
+        <RadioButton
+            android:id="@+id/rb_english"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="@dimen/dp_10"
+            android:text="Welcome to Tmark."
+            android:textColor="@color/colorBlack"
+            android:textSize="@dimen/sp_20"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/rb_hindi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="@dimen/dp_10"
+            android:text="टीमार्क में आपका स्वागत है ।"
+            android:textColor="@color/colorBlack"
+            android:textSize="@dimen/sp_20"
+            android:textStyle="bold" />
+
+    </RadioGroup>
+
+    <com.trackkers.tmark.customviews.MyButton
+        android:id="@+id/btn_language_proceed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Proceed"
+        android:layout_gravity="center"
+        android:textSize="@dimen/sp_18"
+        android:background="@drawable/selector_button"
+        android:textColor="@drawable/text_selector"
+        android:paddingStart="@dimen/dp_50"
+        android:paddingEnd="@dimen/dp_50"
+        android:layout_marginBottom="@dimen/dp_30"/>
+
+</LinearLayout>

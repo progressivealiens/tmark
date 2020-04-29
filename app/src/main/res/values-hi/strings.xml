@@ -9,61 +9,46 @@
     <string name="site">साइट :  </string>
     <string name="route">मार्ग :  </string>
     <string name="employee_name">कर्मचारी का नाम :  </string>
-    <string name="employee_id">पहचान आईडी :  </string>
-    <string name="employee_code">अनोखा कोड :  </string>
-    <string name="checkin_time">आने का समय :  </string>
-    <string name="checkout_time">जाने का समय :  </string>
-    <string name="checkin_address">आने का पता :  </string>
-    <string name="checkout_address">जाने का पता :  </string>
+    <string name="employee_id">कर्मचारी आईडी :  </string>
+    <string name="employee_code">सत्यापनकोड :  </string>
+    <string name="emp_code">कर्मचारी कोड :  </string>
+    <string name="checkin_time">चेकइनका समय :  </string>
+    <string name="checkout_time">चेकआउटका समय :  </string>
+    <string name="checkin_address">कर्मचारी का पता :  </string>
+    <string name="checkout_address">छोड़नेका पता :  </string>
     <string name="date">दिनांक :</string>
     <string name="time">समय :</string>
-    <string name="round_number">गोल संख्या :</string>
+    <string name="round_number">गश्तसंख्या :</string>
     <string name="address">पता :</string>
-    <string name="checkpoints">जांच की चौकी :</string>
 
-    <string name="permission_camera_rationale">कैमरे का उपयोग पता लगाने के लिए आवश्यक है</string>
-    <string name="no_camera_permission">यह एप्लिकेशन नहीं चल सकता क्योंकि इसमें कैमरा अनुमति नहीं है। आवेदन अब बाहर निकल जाएगा।</string>
-    <string name="low_storage_error">कम स्टोरेज के कारण फेस डिटेक्टर निर्भरताएं डाउनलोड नहीं की जा सकती हैं</string>
     <string name="ok">ठीक</string>
-    <string name="checkpoint">चौकियों</string>
+    <string name="checkpoint">चौकी</string>
     <string name="home">होम</string>
     <string name="home_caps">होम</string>
     <string name="docs">दस्तावेज़</string>
     <string name="profile">प्रोफ़ाइल</string>
     <string name="reset_password">पासवर्ड रीसेट</string>
-    <string name="verification_history">सत्यापन का इतिहास</string>
+    <string name="verification_history">रूट का सत्यापन इतिहास</string>
     <string name="share">शेयर</string>
     <string name="rate_us">हमें रेटिंग दें</string>
     <string name="logout">लोग आउट</string>
     <string name="scan_history">स्कैन इतिहास</string>
-    <string name="reset_password_statement">अपना पासवर्ड रीसेट करने के लिए कृपया संपर्क करें<i><u><b>प्रशासक</b></u></i> नीचे दिए गए नंबर पर अपने <i><u><b>कर्मचारी आईडी</b></u></i>या पंजीकृत <i><u><b>मोबाइल नंबर</b></u></i>के साथ</string>
-    <string name="admin_number">व्यवस्थापक संपर्क नंबर :</string>
+    <string name="admin_number">प्रशासकसंपर्क नंबर :</string>
     <string name="admin_name">प्रशासक का नाम :</string>
     <string name="no_scanned_history_found_on_this_selected_date">इस चयनित तारीख को कोई स्कैन इतिहास नहीं मिला</string>
-    <string name="title_activity_maps">नक्शा</string>
     <string name="checkpoint_name">चौकी का नाम : </string>
     <string name="date_amp_time">दिनांक तथा समय :</string>
-    <string name="text_check_network">कोई इंटरनेट कनेक्शन नहीं मिला। कृपया अपने इंटरनेट कनेक्शन की जाँच करें</string>
-    <string name="settings">सेटिंग्स</string>
-    <string name="permission_denied_explanation">उपयोगकर्ता अस्वीकृत अनुमति</string>
-    <string name="permission_rationale">कृपया अपने स्थान का पता लगाने के लिए अनुमति दें</string>
-    <string name="search">निम्न को खोजें</string>
+    <string name="text_check_network">इंटरनेट कनेक्शन नहीं मिला। कृपया अपने इंटरनेट कनेक्शन की जाँच करें</string>
+    <string name="search">खोजें</string>
     <string name="philosopher_bold">Philosopher-Bold.ttf</string>
     <string name="alarm_for">यह अलार्म</string>
-    <string name="error_cannot_open">कैमरा खोल नहीं सकते</string>
-    <string name="error_cannot_write">छवि नहीं लिख सकता</string>
-    <string name="error_cannot_get_permission">कैमरा खोलने की अनुमति नहीं दी गई</string>
-    <string name="error_not_having_camera">कोई फ्रंट कैमरा मौजूद नहीं है</string>
     <string name="start_address">शुरु करने का पता:</string>
     <string name="end_address">अंत का पता :</string>
-    <string name="guard_checkin">सुरक्षा कर्मी चेक इन</string>
+    <string name="guard_checkin">सुरक्षा कर्मी चेकइन</string>
 
-    <string name="tracking_enabled_notif">वर्तमान में ट्रैकिंग सक्षम है</string>
     <string name="test_email" translatable="false">techsaltsolutions@gmail.com</string>
     <string name="test_password" translatable="false">track@123</string>
-    <string name="firebase_path" translatable="false">tmark</string>
-    <string name="transport_id" translatable="false">909827794519</string>
-    <string name="checkin_successfull"><u>उपस्थिति सफल </u></string>
+    <string name="checkin_successfull"><u>चेकइनसफल </u></string>
     <string name="name">नाम :</string>
     <string name="id">पहचान क्रमांक :</string>
     <string name="intro_image">intro_image</string>
@@ -75,32 +60,32 @@
     <string name="mark_attendance">मार्क अटेंडेंस</string>
     <string name="history">इतिहास</string>
     <string name="selfie_based_attendance">सेल्फी आधारित उपस्थिति</string>
-    <string name="unlike_the_traditional">उपस्थिति को चिह्नित करने के पारंपरिक तरीकों के विपरीत <b>टीमार्क</b> सिर्फ एक क्लिक के साथ अपनी दैनिक उपस्थिति को चिह्नित करने के लिए एक नया दृष्टिकोण देता है। अपनी उपस्थिति को चिह्नित करने के लिए एक मुस्कुराहट के साथ अपने कार्य दिवस की शुरुआत करें।</string>
+    <string name="unlike_the_traditional">उपस्थिति को चिह्नित करने के पारंपरिक तरीकों के विपरीत <b>टीमार्क</b>सिर्फ एक क्लिक के साथ अपनी दैनिक उपस्थिति को चिह्नित करने के लिए एक नया दृष्टिकोण देता है। अपनी उपस्थिति को चिह्नित करने के लिए एक मुस्कुराहट के साथ अपने कार्य दिवस की शुरुआत करें।</string>
     <string name="communication">संचार</string>
     <string name="security">सुरक्षा</string>
     <string name="security_personals_only"><u>केवल सुरक्षा कर्मियों के लिए</u></string>
     <string name="route_assigned_history">रूट असाइन किया गया इतिहास</string>
     <string name="please_select_date">कृपया तारीख का चयन करें</string>
     <string name="check_in">चेक इन</string>
-    <string name="image">छवि</string>
-    <string name="all_guard_list">सभी गार्ड सूची</string>
+    <string name="image">फ़ोटो</string>
+    <string name="all_guard_list">सभी कर्मचारी की सूची</string>
     <string name="route_start_address">रूट स्टार्ट एड्रेस</string>
     <string name="route_end_address">रूट एंड एड्रेस</string>
     <string name="please_maintain_the_minimum_25_30_meters_distance_between_two_checkpoints">कृपया दो चौकियों के बीच न्यूनतम (25-30 मीटर) दूरी बनाए रखें।</string>
-    <string name="order_no">आदेश संख्या।</string>
+    <string name="order_no">अनुक्रमसंख्या।</string>
     <string name="check_point_name">चेकपॉइंट का नाम</string>
     <string name="assigned_n_to_me">असाइन किया गया\n(मेरे लिए)</string>
     <string name="organization_name">संस्था का नाम :</string>
     <string name="organization_name_one">संस्था का नाम</string>
     <string name="employee_type">प्रकार :</string>
     <string name="checkin_message">चेकिन संदेश</string>
-    <string name="your_comment_here">कृपया अपनी टिप्पणी यहाँ दें</string>
+    <string name="your_comment_here">अपनी घटना/प्रतिक्रिया की रिपोर्ट करें</string>
     <string name="post_now">अभी पोस्ट करें</string>
     <string name="site_address">साइट का पता</string>
     <string name="current_trip">वर्तमान ट्रिप</string>
     <string name="_0">0</string>
     <string name="verified">सत्यापित</string>
-    <string name="i_m_guarding_the_route">मैं मार्ग की रखवाली करता हूँ</string>
+    <string name="i_m_guarding_the_route">मैं मार्ग की रखवाली कररहाहूँ</string>
     <string name="i_m_not_sleeping">मैं सो नहीं रहा हूँ</string>
     <string name="skip_introduction">परिचय छोड़ें</string>
     <string name="proceed">कृपया आगे बढ़े</string>
@@ -131,9 +116,9 @@
     <string name="updating_your_location">अभी पोस्ट करें</string>
     <string name="updating_your_locations">गार्ड ऑन ड्यूटी है</string>
     <string name="my_bk_service">मेरी पृष्ठभूमि सेवा</string>
-    <string name="my_notification_id">मेरी अधिसूचना आईडी</string>
     <string name="package_name">com.trackkers.tmark</string>
     <string name="guard_duty">गार्ड ड्यूटी पर है</string>
+    <string name="employee_duty">कर्मचारी ड्यूटी पर है</string>
     <string name="checkin_time_">आने का समय :</string>
     <string name="checkout">चेक आउट</string>
     <string name="checkin">चेक इन</string>
@@ -158,7 +143,6 @@
     <string name="noscan">NoScan</string>
     <string name="checkout_sucessfull">चेकआउट सफल</string>
     <string name="camera_closed">कैमरा बंद</string>
-    <string name="no_camera_detected">कोई कैमरा नहीं मिला!</string>
     <string name="scanned_history">स्कैन किया गया इतिहास</string>
     <string name="posted_sucessfully">सफलतापूर्वक पोस्ट किया गया !!!</string>
     <string name="enter_company_name">कृपया अपनी कंपनी का नाम दर्ज करें</string>
@@ -173,17 +157,17 @@
     <string name="bad_request">खराब अनुरोध!! कृपया पुन: प्रयास करें।</string>
     <string name="network_busy">व्यस्त प्रसार।</string>
     <string name="resource_not_found">संसाधन नही मिला।</string>
-    <string name="something_went_wrong">कुछ गलत हो गया!! कृपया पुन: प्रयास करें।</string>
+    <string name="something_went_wrong">कुछ गलत हो गया!!कृपया पुन: प्रयास करें।</string>
     <string name="unable_to_find">ऐपमार्केट में ढूंढने में असमर्थ</string>
     <string name="share_text">टीमार्क\n\nमैं आपको कर्मचारी उपस्थिति और रीयलटाइम ट्रैकिंग सिस्टम के लिए इस ऐप की सलाह देता हूं।\n\n</string>
     <string name="login_session_expired">आपका लॉगिन सत्र समाप्त हो गया है, कृपया फिर से लॉगिन करें।</string>
     <string name="select_guard_to_assign_to_route">मार्ग पर असाइन करने के लिए गार्ड का चयन करें</string>
     <string name="assign_guard">गार्ड सौंपें</string>
     <string name="guard_name">गार्ड का नाम</string>
-    <string name="unassign_guard">अनलग रक्षक</string>
-    <string name="assign_unassign">असाइन / अनसाइन गार्ड</string>
+    <string name="unassign_guard">अनसाइन रक्षक</string>
+    <string name="assign_unassign">असाइन/अनसाइन गार्ड</string>
     <string name="route_name">मार्ग का नाम :-</string>
-    <string name="guard_assigned_to">गार्ड ने सौंपा</string>
+    <string name="guard_assigned_to">गार्ड को नियत</string>
     <string name="successfully">सफलतापूर्वक</string>
     <string name="guard_unassigned_sucess">गार्ड ने सफलता पूर्वक इस्तीफा दे दिया</string>
     <string name="un_assign">अन-असाइन</string>
@@ -207,14 +191,14 @@
     <string name="exact_location_not_detected">सटीक स्थान का पता नहीं चला है कृपया पुनः प्रयास करें</string>
     <string name="permission_required">एप्लिकेशन का उपयोग करने के लिए अनुमति आवश्यक है।</string>
     <string name="no_documents">कोई दस्तावेज संलग्न नहीं।</string>
-    <string name="current_password">Pकृपया अपना वर्तमान पासवर्ड दर्ज करें</string>
+    <string name="current_password">कृपया अपना वर्तमान पासवर्ड दर्ज करें</string>
     <string name="new_password">कृपया अपना नया पासवर्ड दर्ज करें</string>
     <string name="password_six_characters">नया पासवर्ड 6 वर्ण लंबा होना चाहिए</string>
     <string name="password_updated">पासवर्ड सफलतापूर्वक अपडेट किया गया</string>
     <string name="checkpoint_already_verified">यह चेकपॉइंट पहले से ही सत्यापित है</string>
     <string name="volume_up_for_torch">टॉर्च के लिए वॉल्यूम अप बटन दबाएं।</string>
     <string name="verify_routes_lower">रूट सत्यापित करें</string>
-    <string name="assign_unassign_guards_to_route">मार्ग के लिए असाइन / निरस्त  गार्ड।</string>
+    <string name="assign_unassign_guards_to_route">साइट के लिए असाइन/निरस्तगार्ड करें।</string>
     <string name="select_guard_type">गार्ड प्रकार का चयन करें</string>
     <string name="guards_operational">गार्ड (ऑपरेशनल)</string>
     <string name="guard_information">गार्ड की जानकारी</string>
@@ -237,9 +221,10 @@
     <string name="start_visit_first">कृपया पहले यात्रा शुरू करें</string>
     <string name="photo_cant_be_created">फ़ोटो फ़ाइल नहीं बनाई जा सकती, कृपया पुनः प्रयास करें</string>
     <string name="posted_successfully">सफलतापूर्वक पोस्ट किया गया !!!</string>
-    <string name="unable_to_fetch_exact_location">सटीक स्थान लाने में असमर्थ, कृपया प्रतीक्षा करें</string>
+    <string name="unable_to_fetch_exact_location">सटीक स्थान लाने में असमर्थ, कृपया पुनः प्रयास करें</string>
     <string name="site_visit_started_successfully">साइट का दौरा सफलतापूर्वक शुरू हुआ</string>
     <string name="site_visit">साइट यात्रा</string>
+    <string name="site_visit_inspection">साइट का निरीक्षण करें</string>
     <string name="select_language">भाषा का चयन करें</string>
     <string name="please_enter_your_passcode_to_enter_the_app">ऐप में आगे बढ़ने के लिए कृपया अपना पासकोड दर्ज करें</string>
     <string name="wrong_password">आपने गलत पासवर्ड दर्ज किया है। कृपया पुन: प्रयास करें</string>
@@ -253,6 +238,10 @@
     <string name="please_enter_your_new_passcode">कृपया अपना नया पासकोड दर्ज करें</string>
     <string name="reset_login_password">लॉगिन पासवर्ड रीसेट करें</string>
     <string name="reset_app_lock">ऐप लॉक को रीसेट करें</string>
+    <string name="checkpoints_already_verified">चेकपॉइंट पहले से ही सत्यापित है</string>
+    <string name="search_by_guard_name_code">कर्मचारी नाम / कोड द्वारा खोजें</string>
 
 
 </resources>
+
+

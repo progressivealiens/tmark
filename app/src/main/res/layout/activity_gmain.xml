@@ -5,7 +5,7 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
+    android:fitsSystemWindows="false"
     tools:openDrawer="start">
 
     <include
@@ -32,18 +32,17 @@
                 <com.google.android.material.navigation.NavigationView
                     android:id="@+id/nav_view"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
                     android:layout_gravity="start"
-                    android:fitsSystemWindows="true"
                     app:headerLayout="@layout/nav_header_main_guard"
-                    app:menu="@menu/activity_main_drawer_guard" />
-
+                    app:menu="@menu/activity_main_drawer_guard"
+                    app:itemIconTint="@color/colorPrimary"
+                    app:itemTextColor="@color/colorPrimary"/>
 
                 <include layout="@layout/select_language_layout"/>
 
-
             </LinearLayout>
-
 
         </androidx.core.widget.NestedScrollView>
 

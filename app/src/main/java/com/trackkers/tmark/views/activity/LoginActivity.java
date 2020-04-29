@@ -31,7 +31,6 @@ import com.trackkers.tmark.views.activity.bulk_guard.BulkGuardLogin;
 import com.trackkers.tmark.views.activity.fieldofficer.FOMainActivity;
 import com.trackkers.tmark.views.activity.guard.GMainActivity;
 import com.trackkers.tmark.views.activity.operations.OperationsMainActivity;
-import com.trackkers.tmark.views.activity.operations.ViewDocuments;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponse;
@@ -82,6 +81,8 @@ public class LoginActivity extends AppCompatActivity {
         deviceId = Utils.getDeviceId(LoginActivity.this);
         PrefData.writeStringPref(PrefData.deviceID, deviceId);
 
+        Log.e("fcmToken",PrefData.readStringPref(PrefData.firebase_token));
+
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -107,76 +108,76 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void connectApiToLogin(final String CompanyName, String MobileNumber, String Password) {
-
         if (CheckNetworkConnection.isConnection1(LoginActivity.this, true)) {
             progressView.showLoader();
 
-            Call<ApiResponse> call = apiInterface.Login(CompanyName, MobileNumber, Password,PrefData.readStringPref(PrefData.firebase_token));
+            Call<ApiResponse> call = apiInterface.Login(CompanyName, MobileNumber, Password, PrefData.readStringPref(PrefData.firebase_token));
             call.enqueue(new Callback<ApiResponse>() {
                 @Override
-                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
-
+                public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
                     progressView.hideLoader();
-
                     try {
+                        if (response.body() != null) {
+                            if (response.body().getStatus() != null) {
+                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                    PrefData.writeBooleanPref(PrefData.PREF_LOGINSTATUS, true);
+                                    PrefData.writeStringPref(PrefData.security_token, response.body().getToken());
+                                    PrefData.writeStringPref(PrefData.employee_type, response.body().getType());
+                                    PrefData.writeStringPref(PrefData.company_name, response.body().getCompanyName());
+                                    PrefData.writeStringPref(PrefData.company_logo, response.body().getLogo());
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                    if (response.body().getType().equalsIgnoreCase("Field Officer")) {
 
-                            PrefData.writeBooleanPref(PrefData.PREF_LOGINSTATUS, true);
-                            PrefData.writeStringPref(PrefData.security_token, response.body().getToken());
-                            PrefData.writeStringPref(PrefData.employee_type, response.body().getType());
-                            PrefData.writeStringPref(PrefData.company_name, response.body().getCompanyName());
-                            PrefData.writeStringPref(PrefData.company_logo, response.body().getLogo());
+                                        Intent intent = new Intent(LoginActivity.this, FOMainActivity.class);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
 
-                            if (response.body().getType().equalsIgnoreCase("Field Officer")) {
+                                    } else if (response.body().getType().equalsIgnoreCase("Guard")) {
 
-                                Intent intent = new Intent(LoginActivity.this, FOMainActivity.class);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
+                                        Intent intent = new Intent(LoginActivity.this, GMainActivity.class);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
 
-                            } else if (response.body().getType().equalsIgnoreCase("Guard")) {
+                                    } else {
 
-                                Intent intent = new Intent(LoginActivity.this, GMainActivity.class);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
+                                        Intent intent = new Intent(LoginActivity.this, OperationsMainActivity.class);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
+                                    }
 
+                                } else {
+                                    Utils.showSnackBar(rootLogin, response.body().getMsg(), LoginActivity.this);
+                                }
                             } else {
-
-                                Intent intent = new Intent(LoginActivity.this, OperationsMainActivity.class);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
+                                Toast.makeText(LoginActivity.this, "Status Is Null", Toast.LENGTH_SHORT).show();
                             }
-
                         } else {
-                            Utils.showSnackBar(rootLogin, response.body().getMsg(), LoginActivity.this);
+                            Toast.makeText(LoginActivity.this, "Body Is Null", Toast.LENGTH_SHORT).show();
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(LoginActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG).show();
+                            Utils.showToast(LoginActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(LoginActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG).show();
+                            Utils.showToast(LoginActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(LoginActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG).show();
+                            Utils.showToast(LoginActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(LoginActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG).show();
+                            Utils.showToast(LoginActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
-
                 }
 
                 @Override
                 public void onFailure(Call<ApiResponse> call, Throwable t) {
                     progressView.hideLoader();
                     t.printStackTrace();
-
                 }
             });
 
@@ -202,20 +203,20 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    public  void getFirebaseToken(){
+    public void getFirebaseToken() {
         FirebaseInstanceId.getInstance().getInstanceId()
                 .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
                     @Override
                     public void onComplete(@NonNull Task<InstanceIdResult> task) {
-                        if (!task.isSuccessful()) {
+                        if (task.isSuccessful()) {
+                            String token = task.getResult().getToken();
+                            PrefData.writeStringPref(PrefData.firebase_token, token);
+                            //Log.e("Firebase Token : ", token);
+                            //Toast.makeText(LoginActivity.this, token, Toast.LENGTH_SHORT).show();
+                        } else {
                             //Log.e("FirebaseTokenFail", "getInstanceId failed", task.getException());
                             return;
                         }
-                        String token = task.getResult().getToken();
-                        PrefData.writeStringPref(PrefData.firebase_token,token);
-
-                        //Log.e("Firebase Token : ", token);
-                        //Toast.makeText(LoginActivity.this, token, Toast.LENGTH_SHORT).show();
                     }
                 });
     }

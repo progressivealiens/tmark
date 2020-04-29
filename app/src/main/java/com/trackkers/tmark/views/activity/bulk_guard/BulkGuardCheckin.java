@@ -3,15 +3,25 @@ package com.trackkers.tmark.views.activity.bulk_guard;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.location.Location;
+import android.media.ExifInterface;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -19,9 +29,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -45,11 +57,15 @@ import com.trackkers.tmark.helper.CheckNetworkConnection;
 import com.trackkers.tmark.helper.PrefData;
 import com.trackkers.tmark.helper.ProgressView;
 import com.trackkers.tmark.helper.Utils;
+import com.trackkers.tmark.views.activity.LoginActivity;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponseOperations;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -103,13 +119,13 @@ public class BulkGuardCheckin extends AppCompatActivity
     private double currentLatitude;
     private double currentLongitude;
 
-    String imagePath = "", batterPercentage = "";
+    String pictureFilePathCheckin = "", batterPercentage = "",checkinImageName="";
     File imageFile = null;
 
     ApiInterface apiInterface;
     ProgressView progressView;
 
-    private static final int PERMISSIONS_REQUEST_CODE = 666;
+    private static final int REQUEST_CODE_FOR_BACK_CAMERA = 200;
     private static final int REQUEST_CHECK_SETTINGS = 5005;
     private final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9009;
 
@@ -122,14 +138,6 @@ public class BulkGuardCheckin extends AppCompatActivity
     LocationCallback locationCallback;
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        if (!startRequestPermission()) {
-            startRequestPermission();
-        }
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_employee_checkin);
@@ -140,6 +148,14 @@ public class BulkGuardCheckin extends AppCompatActivity
         buildGoogleApiClient();
 
         connectApiToGetGuardPartialDetails();
+
+        ivEmpPic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openDialogToShowImage(checkinImageName);
+            }
+        });
+
     }
 
     @SuppressLint("SetTextI18n")
@@ -150,7 +166,7 @@ public class BulkGuardCheckin extends AppCompatActivity
         tvTitle.setText(R.string.guard_checkin);
 
         tvEmpName.setText(getResources().getString(R.string.name) + " " + PrefData.readStringPref(PrefData.employee_name));
-        tvEmpId.setText(getResources().getString(R.string.employee_code) + " " + PrefData.readStringPref(PrefData.employee_code));
+        tvEmpId.setText(getResources().getString(R.string.emp_code) + " " + PrefData.readStringPref(PrefData.employee_code));
         tvSiteName.setText(getResources().getString(R.string.site) + " " + PrefData.readStringPref(PrefData.site_name));
         tvRouteName.setText(getResources().getString(R.string.route) + " " + PrefData.readStringPref(PrefData.route_name));
         tvRouteStartAddress.setText(getResources().getString(R.string.start_address) + " " + PrefData.readStringPref(PrefData.route_start_address));
@@ -179,20 +195,29 @@ public class BulkGuardCheckin extends AppCompatActivity
         builder = new LocationSettingsRequest.Builder().addLocationRequest(mLocationRequest);
     }
 
-    private boolean startRequestPermission() {
+    private void openDialogToShowImage(String image) {
+        final Dialog dialog = new Dialog(this);
+        dialog.setCancelable(false);
+        dialog.setContentView(R.layout.dialog_image_layout);
 
-        if (ActivityCompat.checkSelfPermission(BulkGuardCheckin.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(BulkGuardCheckin.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(BulkGuardCheckin.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int width = displaymetrics.widthPixels;
+        int height = displaymetrics.heightPixels;
+        dialog.getWindow().setLayout(width, height);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        Button btnDone;
+        ImageView zoomedImage = dialog.findViewById(R.id.iv_selfie);
+        btnDone = dialog.findViewById(R.id.btn_done);
+        Picasso.get().load(image).placeholder(R.drawable.progress_animation).into(zoomedImage);
 
-            ActivityCompat.requestPermissions(BulkGuardCheckin.this, new String[]{Manifest.permission.CAMERA,
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    PERMISSIONS_REQUEST_CODE);
-            return false;
-        } else {
-            return true;
-        }
+        btnDone.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.cancel();
+            }
+        });
+        dialog.show();
     }
 
     @Override
@@ -296,6 +321,7 @@ public class BulkGuardCheckin extends AppCompatActivity
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+        BulkGuardMainActivity.isReloadNeeded=true;
         finish();
     }
 
@@ -316,26 +342,94 @@ public class BulkGuardCheckin extends AppCompatActivity
     }
 
     private void checkIn() {
-        Intent i = new Intent(BulkGuardCheckin.this, CameraActivity.class);
-        startActivityForResult(i, 200);
+
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        File pictureFileCheckin = null;
+        try {
+            pictureFileCheckin = getPictureFileCheckin();
+            if (pictureFileCheckin != null) {
+                Uri photoURI = FileProvider.getUriForFile(this, "com.trackkers.tmark.fileprovider", pictureFileCheckin);
+                cameraIntent.putExtra(MediaStore.EXTRA_FINISH_ON_COMPLETION, true);
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                startActivityForResult(cameraIntent, REQUEST_CODE_FOR_BACK_CAMERA);
+            }
+        } catch (IOException ex) {
+            Utils.showToast(this, "Photo file can't be created, please try again", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+        }
+
+        /*Intent i = new Intent(BulkGuardCheckin.this, CameraActivity.class);
+        startActivityForResult(i, 200);*/
+    }
+
+    private File getPictureFileCheckin() throws IOException {
+        String timeStamp = Utils.currentTimeStamp();
+        File storageDir = getExternalFilesDir(null);
+        File image = File.createTempFile(timeStamp, ".png", storageDir);
+        pictureFilePathCheckin = image.getAbsolutePath();
+        return image;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void rotateBitmap(Bitmap bitmap, String filePath, File fileName) {
+
+        ExifInterface exifInterface = null;
+        try {
+            exifInterface = new ExifInterface(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        int orientation = 0;
+        if (exifInterface != null) {
+            orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+        }
+        Matrix matrix = new Matrix();
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.setRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.setRotate(180);
+                break;
+            default:
+        }
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        try {
+            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 25, new FileOutputStream(fileName));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 200) {
+        if (requestCode == REQUEST_CODE_FOR_BACK_CAMERA) {
             if (resultCode == Activity.RESULT_OK) {
-                imagePath = data.getStringExtra("result");
+
+                imageFile = new File(pictureFilePathCheckin);
+
+                Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getPath());
+                bitmap=Utils.watermarkOnImage(BulkGuardCheckin.this,bitmap);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    rotateBitmap(bitmap, imageFile.getPath(), imageFile);
+                } else {
+                    try {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 25, new FileOutputStream(imageFile));
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
 
                 getLocationFromService(0);
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                Toast.makeText(this, R.string.camera_closed, Toast.LENGTH_SHORT).show();
+                Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.camera_closed), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         } else if (requestCode == REQUEST_CHECK_SETTINGS) {
             if (resultCode == Activity.RESULT_OK) {
                 Log.e("gpsSucess", "gpsSucess");
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                Toast.makeText(this, R.string.enable_gps, Toast.LENGTH_SHORT).show();
+                Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.enable_gps), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 finish();
             }
         }
@@ -353,6 +447,7 @@ public class BulkGuardCheckin extends AppCompatActivity
         if (CheckNetworkConnection.isConnection1(BulkGuardCheckin.this, true)) {
 
             progressView.showLoader();
+
             Call<ApiResponseOperations> call = apiInterface.multipleGuardPartialDetails(
                     PrefData.readStringPref(PrefData.employee_id),
                     PrefData.readStringPref(PrefData.route_id));
@@ -364,43 +459,52 @@ public class BulkGuardCheckin extends AppCompatActivity
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                if (response.body().isIsCheckedIn()) {
+                                    btnEmpCheckin.setText(R.string.checkout);
+                                    btnEmpCheckin.setBackground(getResources().getDrawable(R.drawable.selector_button_red));
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            if (response.body().isIsCheckedIn()) {
-                                btnEmpCheckin.setText(R.string.checkout);
+                                    tvCheckinTime.setVisibility(View.VISIBLE);
+                                    tvCheckoutTime.setVisibility(View.VISIBLE);
+                                    viewCheckintime.setVisibility(View.VISIBLE);
+                                    viewCheckouttime.setVisibility(View.VISIBLE);
+                                    tvCheckinTime.setText(getString(R.string.checkin_time_) + " " + response.body().getCheckInTime());
+                                    tvCheckoutTime.setText(R.string.employee_duty);
 
-                                tvCheckinTime.setVisibility(View.VISIBLE);
-                                tvCheckoutTime.setVisibility(View.VISIBLE);
-                                viewCheckintime.setVisibility(View.VISIBLE);
-                                viewCheckouttime.setVisibility(View.VISIBLE);
-                                tvCheckinTime.setText(getString(R.string.checkin_time_) + " " + response.body().getCheckInTime());
-                                tvCheckoutTime.setText(R.string.guard_duty);
 
-                                Picasso.get().load(Utils.BASE_IMAGE + response.body().getStartImageName()).placeholder(R.drawable.progress_animation).into(ivEmpPic);
+                                    checkinImageName=response.body().getStartImageName();
+                                    Picasso.get().load(response.body().getStartImageName()).placeholder(R.drawable.progress_animation).into(ivEmpPic);
 
+                                } else {
+                                    btnEmpCheckin.setText(R.string.checkin);
+                                    btnEmpCheckin.setBackground(getResources().getDrawable(R.drawable.selector_button_green));
+                                    tvCheckinTime.setVisibility(View.GONE);
+                                    tvCheckoutTime.setVisibility(View.GONE);
+                                }
                             } else {
-                                btnEmpCheckin.setText(R.string.checkin);
-                                tvCheckinTime.setVisibility(View.GONE);
-                                tvCheckoutTime.setVisibility(View.GONE);
-                            }
-                        } else {
-                            Utils.showSnackBar(rootEmpCheckin, response.body().getMsg(), BulkGuardCheckin.this);
-                        }
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
 
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(BulkGuardCheckin.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(BulkGuardCheckin.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
+                            }
+                        }
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(BulkGuardCheckin.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(BulkGuardCheckin.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink),getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(BulkGuardCheckin.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(BulkGuardCheckin.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 
                     }
-
                 }
 
                 @Override
@@ -425,15 +529,13 @@ public class BulkGuardCheckin extends AppCompatActivity
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-
-                    imageFile = new File(imagePath);
                     MultipartBody.Part filePart = MultipartBody.Part.createFormData("selfie", imageFile.getName(), RequestBody.create(MediaType.parse("image/*"), imageFile));
                     RequestBody Latitude = RequestBody.create(MediaType.parse("text/plain"), currentLatitude + "");
                     RequestBody Longitude = RequestBody.create(MediaType.parse("text/plain"), currentLongitude + "");
                     RequestBody SecurityToken = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.employee_id) + "");
-                    RequestBody RouteId = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(PrefData.readStringPref(PrefData.route_id)) + "");
+                    RequestBody RouteId = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.route_id) + "");
                     RequestBody DeviceId = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.deviceID) + "");
-                    RequestBody Battery = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(Utils.getBatteryPercentage(BulkGuardCheckin.this)) + "");
+                    RequestBody Battery = RequestBody.create(MediaType.parse("text/plain"), Utils.getBatteryPercentage(BulkGuardCheckin.this) + "");
 
                     Call<ApiResponseOperations> call = apiInterface.guardMultipleCheckIn(
                             SecurityToken,
@@ -451,38 +553,43 @@ public class BulkGuardCheckin extends AppCompatActivity
                             progressView.hideLoader();
 
                             try {
+                                if (response.body() != null && response.body().getStatus() != null) {
+                                    if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                        Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.checkin_sucessfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                        btnEmpCheckin.setText(R.string.checkout);
+                                        btnEmpCheckin.setBackground(getResources().getDrawable(R.drawable.selector_button_red));
+                                        tvCheckinTime.setVisibility(View.VISIBLE);
+                                        tvCheckoutTime.setVisibility(View.VISIBLE);
+                                        viewCheckintime.setVisibility(View.VISIBLE);
+                                        viewCheckouttime.setVisibility(View.VISIBLE);
+                                        tvCheckinTime.setText(R.string.checkin_time_ + " " + response.body().getCheckInTime());
+                                        tvCheckoutTime.setText(R.string.employee_duty);
 
-                                    Toast.makeText(BulkGuardCheckin.this, R.string.checkin_sucessfull, Toast.LENGTH_SHORT).show();
-                                    btnEmpCheckin.setText(R.string.checkout);
-                                    tvCheckinTime.setVisibility(View.VISIBLE);
-                                    tvCheckoutTime.setVisibility(View.VISIBLE);
-                                    viewCheckintime.setVisibility(View.VISIBLE);
-                                    viewCheckouttime.setVisibility(View.VISIBLE);
-                                    tvCheckinTime.setText(R.string.checkin_time_ + " " + response.body().getCheckInTime());
-                                    tvCheckoutTime.setText(R.string.guard_duty);
+                                        checkinImageName=response.body().getStartImageName();
+                                        Picasso.get().load(checkinImageName).placeholder(R.drawable.progress_animation).into(ivEmpPic);
+                                    } else {
+                                        if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
 
-                                    Picasso.get().load(Utils.BASE_IMAGE + response.body().getStartImageName()).placeholder(R.drawable.progress_animation).into(ivEmpPic);
-
-                                } else {
-                                    Utils.showSnackBar(rootEmpCheckin, response.body().getMsg(), BulkGuardCheckin.this);
+                                            Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                            Utils.logout(BulkGuardCheckin.this, LoginActivity.class);
+                                        } else {
+                                            Utils.showToast(BulkGuardCheckin.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                        }
+                                    }
                                 }
-
                             } catch (Exception e) {
                                 if (response.code() == 400) {
-                                    Toast.makeText(BulkGuardCheckin.this, "Bad Request!! Please retry.", Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 500) {
-                                    Toast.makeText(BulkGuardCheckin.this, "Network Busy.", Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink),getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 404) {
-                                    Toast.makeText(BulkGuardCheckin.this, "Resource Not Found.", Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else {
-                                    Toast.makeText(BulkGuardCheckin.this, "Something went heywire!! please retry.", Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 }
                                 e.printStackTrace();
-
                             }
-
                         }
 
                         @Override
@@ -492,7 +599,7 @@ public class BulkGuardCheckin extends AppCompatActivity
                         }
                     });
                 }
-            }, 500);
+            }, 200);
         }
     }
 
@@ -524,26 +631,38 @@ public class BulkGuardCheckin extends AppCompatActivity
                             progressView.hideLoader();
 
                             try {
+                                if (response.body() != null && response.body().getStatus() != null) {
+                                    if (response.body().getStatus().equalsIgnoreCase("success")) {
 
-                                if (response.body().getStatus().equalsIgnoreCase("success")) {
+                                        Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.checkout_sucessfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                        btnEmpCheckin.setText(R.string.checkin);
+                                        btnEmpCheckin.setBackground(getResources().getDrawable(R.drawable.selector_button_green));
 
-                                    btnEmpCheckin.setText(R.string.checkin);
-                                    startActivity(new Intent(BulkGuardCheckin.this, BulkGuardMainActivity.class));
-                                    finish();
+                                        Intent intent = new Intent(BulkGuardCheckin.this, BulkGuardMainActivity.class);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
 
-                                } else {
-                                    Utils.showSnackBar(rootEmpCheckin, response.body().getMsg(), BulkGuardCheckin.this);
+                                    } else {
+                                        if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+
+                                            Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                            Utils.logout(BulkGuardCheckin.this, LoginActivity.class);
+                                        } else {
+                                            Utils.showToast(BulkGuardCheckin.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                        }
+                                    }
                                 }
-
                             } catch (Exception e) {
                                 if (response.code() == 400) {
-                                    Toast.makeText(BulkGuardCheckin.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 500) {
-                                    Toast.makeText(BulkGuardCheckin.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink),getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 404) {
-                                    Toast.makeText(BulkGuardCheckin.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else {
-                                    Toast.makeText(BulkGuardCheckin.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(BulkGuardCheckin.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 }
                                 e.printStackTrace();
 
@@ -558,24 +677,7 @@ public class BulkGuardCheckin extends AppCompatActivity
                         }
                     });
                 }
-            }, 500);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSIONS_REQUEST_CODE) {
-            if (grantResults.length <= 0) {
-                Log.i("tag", "User interaction was cancelled.");
-            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
-                if (mGoogleApiClient == null) {
-                    buildGoogleApiClient();
-                }
-            } else if (grantResults[0] == PackageManager.PERMISSION_DENIED || grantResults[1] == PackageManager.PERMISSION_DENIED || grantResults[2] == PackageManager.PERMISSION_DENIED) {
-                Toast.makeText(BulkGuardCheckin.this, R.string.sorry_cant_use, Toast.LENGTH_LONG).show();
-                startRequestPermission();
-            }
+            }, 200);
         }
     }
 

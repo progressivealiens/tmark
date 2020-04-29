@@ -1,11 +1,14 @@
 package com.trackkers.tmark.adapter.fieldofficer;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.net.Uri;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -24,6 +27,8 @@ import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.textfield.TextInputEditText;
 import com.trackkers.tmark.R;
 import com.trackkers.tmark.customviews.MyButton;
@@ -33,6 +38,7 @@ import com.trackkers.tmark.helper.PrefData;
 import com.trackkers.tmark.helper.ProgressView;
 import com.trackkers.tmark.helper.Utils;
 import com.trackkers.tmark.model.fieldofficer.SurveyAnswerModel;
+import com.trackkers.tmark.views.activity.LoginActivity;
 import com.trackkers.tmark.views.activity.fieldofficer.SiteDetailsActivity;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
@@ -120,14 +126,17 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
         if (siteDetails.get(position).isAlreadySiteVisitStarted()) {
             viewholder.cardViewComments.setVisibility(View.VISIBLE);
+            viewholder.ivInstructions.setVisibility(View.VISIBLE);
         } else {
             viewholder.cardViewComments.setVisibility(View.GONE);
+            viewholder.ivInstructions.setVisibility(View.GONE);
         }
 
         viewholder.btnStartSiteVisit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
+                Log.e("siteId", "" + siteDetails.get(position).getSuid());
                 if (siteDetails.get(position).isAlreadySiteVisitStarted()) {
                     Toast.makeText(context, context.getResources().getString(R.string.visit_already_started), Toast.LENGTH_SHORT).show();
                 } else {
@@ -136,7 +145,7 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                     if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
                         sendTakePictureIntentForStartVisit(0);
                     } else {
-                        Toast.makeText(context, context.getResources().getString(R.string.phone_doesnt_have_camer), Toast.LENGTH_LONG).show();
+                        Utils.showToast(context, context.getResources().getString(R.string.phone_doesnt_have_camer), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                     }
                 }
             }
@@ -148,20 +157,13 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
                 if (siteDetails.get(position).isAlreadySiteVisitStarted()) {
 
-                   /* if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
-                        Toast.makeText(context, context.getResources().getString(R.string.unable_to_fetch_exact_location), Toast.LENGTH_SHORT).show();
-                    } else {
-                        connectApiToEndSiteVisit();
-                    }*/
-
                     connectApiToFetchSurveyQuestions(String.valueOf(siteDetails.get(position).getSuid()), siteDetails.get(position).getVisitToken(), siteDetails.get(position).getSiteName());
 
                 } else {
-                    Toast.makeText(context, context.getResources().getString(R.string.start_visit_first), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(context, context.getResources().getString(R.string.start_visit_first), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                 }
             }
         });
-
 
         viewholder.tvAttachImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -172,7 +174,7 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
                     sendTakePictureIntentForStartVisit(1);
                 } else {
-                    Toast.makeText(context, context.getResources().getString(R.string.phone_doesnt_have_camer), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(context, context.getResources().getString(R.string.phone_doesnt_have_camer), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                 }
             }
         });
@@ -199,62 +201,148 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         });
 
 
+        viewholder.ivInstructions.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                connectApiToFetchInstruction(String.valueOf(siteDetails.get(position).getSuid()));
+
+            }
+        });
+    }
+
+    private void connectApiToFetchInstruction(String siteId) {
+        if (CheckNetworkConnection.isConnection1(context, true)) {
+            progressView.showLoader();
+
+            Call<ApiResponse> call = apiInterface.siteInstruction(siteId);
+
+            call.enqueue(new Callback<ApiResponse>() {
+                @Override
+                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                    progressView.hideLoader();
+                    try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(context.getResources().getString(R.string.success))) {
+
+                                if (response.body().getSiteInstruction().size() > 0) {
+
+                                    openDialogToShowInstructions(context, response.body().getSiteInstruction());
+                                } else {
+                                    Utils.showToast(context, "No Site Instructions Found.....", Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                                }
+
+                            } else {
+                                Utils.showToast(context, response.body().getMsg(), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                            }
+                        }
+                    } catch (Exception e) {
+                        if (response.code() == 400) {
+                            Utils.showToast(context, context.getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 500) {
+                            Utils.showToast(context, context.getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 404) {
+                            Utils.showToast(context, context.getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        } else {
+                            Utils.showToast(context, context.getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        }
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse> call, Throwable t) {
+                    progressView.hideLoader();
+                }
+            });
+        }
+    }
+
+    private void openDialogToShowInstructions(Context context, List<ApiResponse.SiteInstructionBean> siteInstruction) {
+        final Dialog dialog = new Dialog(context);
+        dialog.setCancelable(false);
+        dialog.setContentView(R.layout.dialog_instruction);
+
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        ((AppCompatActivity) context).getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int width = displaymetrics.widthPixels;
+        int height = (int) (displaymetrics.heightPixels * 0.6);
+        dialog.getWindow().setLayout(width, height);
+
+        RecyclerView instructionRecycler;
+        InstructionAdapter mAdapter;
+        MyButton done;
+
+        instructionRecycler = dialog.findViewById(R.id.recycler_instruction);
+        done = dialog.findViewById(R.id.btn_dialog_done);
+
+        LinearLayoutManager manager = new LinearLayoutManager(context);
+        instructionRecycler.setLayoutManager(manager);
+        mAdapter = new InstructionAdapter(context, siteInstruction);
+        instructionRecycler.setAdapter(mAdapter);
+        mAdapter.notifyDataSetChanged();
+
+        done.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
     }
 
     private void connectApiToFetchSurveyQuestions(String suid, String visitToken, String sitename) {
         if (CheckNetworkConnection.isConnection1(context, true)) {
             progressView.showLoader();
-        }
 
-        Call<SurveyResponse> call = apiInterface.getFoSiteSurvey(PrefData.readStringPref(PrefData.firebase_token), suid);
-        call.enqueue(new Callback<SurveyResponse>() {
-            @Override
-            public void onResponse(Call<SurveyResponse> call, Response<SurveyResponse> response) {
-                progressView.hideLoader();
-                try {
+            Call<SurveyResponse> call = apiInterface.getFoSiteSurvey(PrefData.readStringPref(PrefData.firebase_token), suid);
+            call.enqueue(new Callback<SurveyResponse>() {
+                @Override
+                public void onResponse(Call<SurveyResponse> call, Response<SurveyResponse> response) {
+                    progressView.hideLoader();
+                    try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(context.getResources().getString(R.string.success))) {
 
-                    if (response.body().getStatus().equalsIgnoreCase(context.getResources().getString(R.string.success))) {
+                                List<SurveyResponse.DataBean.AllQuestionsBean> surveyResponses = new ArrayList<>();
 
-                        List<SurveyResponse.DataBean.AllQuestionsBean> surveyResponses = new ArrayList<>();
+                                surveyResponses.clear();
+                                surveyResponses.addAll(response.body().getData().get(0).getAllQuestions());
 
-                        surveyResponses.clear();
-                        surveyResponses.addAll(response.body().getData().get(0).getAllQuestions());
+                                String surveyId = String.valueOf(response.body().getData().get(0).getSurvuid());
+                                String surveyName = String.valueOf(response.body().getData().get(0).getSurveyname());
 
-                        String surveyId = String.valueOf(response.body().getData().get(0).getSurvuid());
-                        String surveyName = String.valueOf(response.body().getData().get(0).getSurveyname());
+                                openDialogToTakeSurveyBeforeEndVisit(visitToken, surveyResponses, surveyId, surveyName, sitename);
 
-                        openDialogToTakeSurveyBeforeEndVisit(visitToken, surveyResponses, surveyId, surveyName, sitename);
-
-                    } else {
-                        if (response.body().getStatus().toLowerCase().equalsIgnoreCase("fail")) {
-                            connectApiToEndSiteVisit(visitToken, "null", "null", null, false);
-                        } else if (response.body().getStatus().toLowerCase().equalsIgnoreCase("error")) {
-                            Toast.makeText(context, response.body().getMsg(), Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(context, response.body().getMsg(), Toast.LENGTH_LONG).show();
+                            } else {
+                                if (response.body().getStatus().toLowerCase().equalsIgnoreCase("fail")) {
+                                    connectApiToEndSiteVisit(visitToken, "null", "null", null, false);
+                                } else {
+                                    Utils.showToast(context, response.body().getMsg(), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                                }
+                            }
                         }
+                    } catch (Exception e) {
+                        if (response.code() == 400) {
+                            Utils.showToast(context, context.getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 500) {
+                            Utils.showToast(context, context.getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 404) {
+                            Utils.showToast(context, context.getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        } else {
+                            Utils.showToast(context, context.getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                        }
+                        e.printStackTrace();
                     }
-                } catch (Exception e) {
-                    if (response.code() == 400) {
-                        Toast.makeText(context, context.getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
-                    } else if (response.code() == 500) {
-                        Toast.makeText(context, context.getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
-                    } else if (response.code() == 404) {
-                        Toast.makeText(context, context.getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(context, context.getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
-                    }
-                    e.printStackTrace();
                 }
-            }
 
-            @Override
-            public void onFailure(Call<SurveyResponse> call, Throwable t) {
-                progressView.hideLoader();
-            }
-        });
-
-
+                @Override
+                public void onFailure(Call<SurveyResponse> call, Throwable t) {
+                    progressView.hideLoader();
+                }
+            });
+        }
     }
 
     private void openDialogToTakeSurveyBeforeEndVisit(String visitToken, List<SurveyResponse.DataBean.AllQuestionsBean> surveyBeans, String surveyId, String surveyname, String sitename) {
@@ -263,7 +351,7 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         dialog.setContentView(R.layout.dialog_survey);
 
         DisplayMetrics displaymetrics = new DisplayMetrics();
-        ((AppCompatActivity) context).getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        context.getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
         int width = (int) (displaymetrics.widthPixels * 0.9);
         int height = (int) (displaymetrics.heightPixels * 0.7);
         dialog.getWindow().setLayout(width, height);
@@ -329,19 +417,18 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                                 jsonArray.put(uidObject);
                             }
                             mainObject.put("data", jsonArray);
-                            Log.e("data", mainObject.toString());
                             connectApiToEndSiteVisit(visitToken, mainObject.toString(), surveyId, dialog, true);
 
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
 
-                    }else {
-                        Toast.makeText(context, "Please answer all the questions", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Utils.showToast(context, "Please answer all the questions", Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                     }
 
                 } else {
-                    Toast.makeText(context, "Please answer all the questions", Toast.LENGTH_SHORT).show();
+                    Utils.showToast(context, "Please answer all the questions", Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                 }
             }
         });
@@ -365,7 +452,7 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 }
             }
         } catch (IOException ex) {
-            Toast.makeText(context, context.getResources().getString(R.string.photo_cant_be_created), Toast.LENGTH_SHORT).show();
+            Utils.showToast(context, context.getResources().getString(R.string.photo_cant_be_created), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
         }
     }
 
@@ -415,33 +502,37 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(context.getResources().getString(R.string.success))) {
+                                Toast.makeText(context, context.getResources().getString(R.string.posted_successfully), Toast.LENGTH_SHORT).show();
 
-                        if (response.body().getStatus().equalsIgnoreCase(context.getResources().getString(R.string.success))) {
-                            Toast.makeText(context, context.getResources().getString(R.string.posted_successfully), Toast.LENGTH_SHORT).show();
+                                etComment.setText("");
+                                commType = "";
+                                tvAttachImage.setImageResource(R.drawable.ic_add_camera);
+                                commentImagePath = "";
 
-                            etComment.setText("");
-                            commType = "";
-                            tvAttachImage.setImageResource(R.drawable.ic_add_box_black_24dp);
-                            commentImagePath = "";
+                            } else {
 
-                        } else {
-                            Toast.makeText(context, response.body().getMsg(), Toast.LENGTH_LONG).show();
-
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(context, context.getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(context, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(context, response.body().getMsg(), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                                }
+                            }
                         }
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(context, context.getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(context, context.getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(context, context.getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(context, context.getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(context, context.getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(context, context.getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(context, context.getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(context, context.getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
-
                     }
-
                 }
 
                 @Override
@@ -451,14 +542,21 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 }
             });
         }
-
-
     }
 
     private void connectApiToEndSiteVisit(String visitiToken, String responseData, String surveyId, Dialog dialog, boolean flag) {
 
         if (CheckNetworkConnection.isConnection1(context, true)) {
             progressView.showLoader();
+
+            if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
+                SiteDetailsActivity.getLastKnownLocation(context);
+            }
+
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
 
             Call<ApiResponse> call = apiInterface.EndSiteVisit(
                     PrefData.readStringPref(PrefData.security_token),
@@ -473,19 +571,24 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 @Override
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     progressView.hideLoader();
+                    if (response.body() != null && response.body().getStatus() != null) {
+                        if (response.body().getStatus().equalsIgnoreCase(context.getString(R.string.success))) {
 
-                    if (response.body().getStatus().equalsIgnoreCase(context.getString(R.string.success))) {
+                            Toast.makeText(context, "Site Visit Ended Successfully", Toast.LENGTH_SHORT).show();
 
-                        Toast.makeText(context, "Site Visit Ended Successfully", Toast.LENGTH_SHORT).show();
+                            myCallback.listenerMethod();
+                            if (flag) {
+                                dialog.dismiss();
+                            }
 
-                        myCallback.listenerMethod();
-                        if (flag) {
-                            dialog.dismiss();
+                        } else {
+                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                Utils.showToast(context, context.getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                                Utils.logout(context, LoginActivity.class);
+                            } else {
+                                Utils.showToast(context, response.body().getMsg(), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                            }
                         }
-
-
-                    } else {
-                        Toast.makeText(context, response.body().getMsg(), Toast.LENGTH_LONG).show();
                     }
                 }
 
@@ -495,10 +598,11 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                     t.printStackTrace();
                 }
             });
+                }
+            }, 200);
         }
-
-
     }
+
 
     @Override
     public int getItemCount() {
@@ -506,6 +610,7 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     }
 
     public class MyViewholder extends RecyclerView.ViewHolder {
+
         @BindView(R.id.tv_site_name)
         MyTextview tvSiteName;
         @BindView(R.id.tv_site_address)
@@ -524,6 +629,8 @@ public class SiteDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         Button btnSubmitComments;
         @BindView(R.id.card_view_comments)
         LinearLayout cardViewComments;
+        @BindView(R.id.iv_instructions)
+        ImageView ivInstructions;
 
         public MyViewholder(@NonNull View itemView) {
             super(itemView);

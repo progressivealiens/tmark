@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.trackkers.tmark.R;
 import com.trackkers.tmark.helper.PrefData;
+import com.trackkers.tmark.helper.Utils;
 import com.trackkers.tmark.views.activity.fieldofficer.FOCheckpoints;
 import com.trackkers.tmark.webApi.ApiResponse;
 
@@ -65,20 +66,16 @@ public class FOCheckpointsRecycler extends RecyclerView.Adapter<RecyclerView.Vie
             public void onClick(View v) {
 
                 if (foCheckpointsModels.get(i).isCheckPointIsVerified()) {
-                    Toast.makeText(context, context.getResources().getString(R.string.checkpoint_already_verified), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(context, context.getResources().getString(R.string.checkpoint_already_verified), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                 } else {
 
 
                     PrefData.writeStringPref(PrefData.checkpoint_id, String.valueOf(foCheckpointsModels.get(i).getCheckPointId()));
                     PrefData.writeStringPref(PrefData.checkpoint_id_position, String.valueOf(i));
-                    Toast.makeText(context, context.getResources().getString(R.string.volume_up_for_torch), Toast.LENGTH_LONG).show();
-
+                    Utils.showToast(context, context.getResources().getString(R.string.volume_up_for_torch), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorLightGreen), context.getResources().getColor(R.color.colorWhite));
                     FOCheckpoints.qrScanFO.setOrientationLocked(true);
                     FOCheckpoints.qrScanFO.initiateScan();
-
                 }
-
-
             }
         });
 

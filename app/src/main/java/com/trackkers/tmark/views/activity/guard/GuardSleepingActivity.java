@@ -25,6 +25,7 @@ import com.trackkers.tmark.helper.PrefData;
 import com.trackkers.tmark.helper.ProgressView;
 import com.trackkers.tmark.helper.Utils;
 import com.trackkers.tmark.services.AlarmService;
+import com.trackkers.tmark.views.activity.LoginActivity;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponse;
@@ -145,35 +146,38 @@ public class GuardSleepingActivity extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
-
-                        if (response.body().getStatus().equalsIgnoreCase("success")) {
-                            ringtone.stop();
-                            AlarmService.setAlarm(true, GuardSleepingActivity.this);
-                            if (totalActivitiesInStack > 1) {
-                                finish();
-                            } else if (totalActivitiesInStack == 1) {
-                                ExitActivity.exitApplication(GuardSleepingActivity.this);
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase("success")) {
+                                ringtone.stop();
+                                AlarmService.setAlarm(true, GuardSleepingActivity.this);
+                                if (totalActivitiesInStack > 1) {
+                                    finish();
+                                } else if (totalActivitiesInStack == 1) {
+                                    ExitActivity.exitApplication(GuardSleepingActivity.this);
+                                } else {
+                                    finish();
+                                }
                             } else {
-                                finish();
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(GuardSleepingActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(GuardSleepingActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(GuardSleepingActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-                        } else {
-                            Utils.showSnackBar(rootGuardSleeping, response.body().getMsg(), GuardSleepingActivity.this);
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(GuardSleepingActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GuardSleepingActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(GuardSleepingActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GuardSleepingActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(GuardSleepingActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GuardSleepingActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(GuardSleepingActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GuardSleepingActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
-
                     }
-
                 }
 
                 @Override
@@ -196,11 +200,11 @@ public class GuardSleepingActivity extends AppCompatActivity {
             numOfActivities = runningTaskInfoList.get(i).numActivities;
             topActivity = runningTaskInfoList.get(i).topActivity.getShortClassName();
         }
-
         totalActivitiesInStack = runningTaskInfoList.get(0).numActivities;
     }
 
     @Override
     public void onBackPressed() {
+        //do nothing
     }
 }

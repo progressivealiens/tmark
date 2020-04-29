@@ -4,7 +4,6 @@ import java.util.List;
 
 public class SurveyResponse {
 
-
     private String status;
     private String msg;
     private List<DataBean> data;

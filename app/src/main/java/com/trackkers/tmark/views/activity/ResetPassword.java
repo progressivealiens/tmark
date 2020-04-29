@@ -112,36 +112,34 @@ public class ResetPassword extends AppCompatActivity implements View.OnClickList
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                resetData.clear();
 
-                            resetData.clear();
+                                resetData.addAll(response.body().getData());
 
-                            resetData.addAll(response.body().getData());
-
-                            tvResetAdminName.setText(getResources().getString(R.string.admin_name) + resetData.get(0).getAdministratorName());
-                            tvResetAdminMobile.setText(getResources().getString(R.string.admin_number) + resetData.get(0).getAdministratorMobile());
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(ResetPassword.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(ResetPassword.this, LoginActivity.class);
+                                tvResetAdminName.setText(getResources().getString(R.string.admin_name) + resetData.get(0).getAdministratorName());
+                                tvResetAdminMobile.setText(getResources().getString(R.string.admin_number) + resetData.get(0).getAdministratorMobile());
                             } else {
-                                Utils.showSnackBar(rootResetPassword, response.body().getMsg(), ResetPassword.this);
+
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(ResetPassword.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(ResetPassword.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(rootResetPassword, response.body().getMsg(), ResetPassword.this);
+                                }
                             }
-
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(ResetPassword.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ResetPassword.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(ResetPassword.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ResetPassword.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(ResetPassword.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ResetPassword.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(ResetPassword.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ResetPassword.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
@@ -157,8 +155,6 @@ public class ResetPassword extends AppCompatActivity implements View.OnClickList
 
         }
     }
-
-
 
 
     @Override
@@ -180,24 +176,24 @@ public class ResetPassword extends AppCompatActivity implements View.OnClickList
                 Utils.showSnackBar(rootResetPassword, getResources().getString(R.string.please_enter_your_current_passcode), etAppCurrentPassword, ResetPassword.this);
             } else if (Validation.nullValidator(etAppNewPassword.getText().toString().trim())) {
                 Utils.showSnackBar(rootResetPassword, getResources().getString(R.string.please_enter_your_new_passcode), etAppNewPassword, ResetPassword.this);
-            }else{
+            } else {
 
-                String currentPassword=PrefData.readStringPref(PrefData.lockPassword);
-                if (currentPassword.equalsIgnoreCase("")){
-                    PrefData.writeStringPref(PrefData.lockPassword,etAppNewPassword.getText().toString());
+                String currentPassword = PrefData.readStringPref(PrefData.lockPassword);
+                if (currentPassword.equalsIgnoreCase("")) {
+                    PrefData.writeStringPref(PrefData.lockPassword, etAppNewPassword.getText().toString());
                     etAppCurrentPassword.setText("");
                     etAppNewPassword.setText("");
-                    Toast.makeText(this, "Your Password has been Changed Successfully", Toast.LENGTH_LONG).show();
+                    Utils.showToast(this, "Your Password has been Changed Successfully", Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
 
-                }else if(!currentPassword.equalsIgnoreCase("")){
+                } else if (!currentPassword.equalsIgnoreCase("")) {
 
-                    if (currentPassword.equalsIgnoreCase(etAppCurrentPassword.getText().toString())){
-                        PrefData.writeStringPref(PrefData.lockPassword,etAppNewPassword.getText().toString());
+                    if (currentPassword.equalsIgnoreCase(etAppCurrentPassword.getText().toString())) {
+                        PrefData.writeStringPref(PrefData.lockPassword, etAppNewPassword.getText().toString());
                         etAppCurrentPassword.setText("");
                         etAppNewPassword.setText("");
-                        Toast.makeText(this, "Your Password has been Changed Successfully", Toast.LENGTH_SHORT).show();
-                    }else{
-                        Toast.makeText(this, "Current password is wrong", Toast.LENGTH_SHORT).show();
+                        Utils.showToast(ResetPassword.this, "Your Password has been Changed Successfully", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                    } else {
+                        Utils.showToast(ResetPassword.this, "Current password is wrong", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                     }
                 }
             }
@@ -230,35 +226,35 @@ public class ResetPassword extends AppCompatActivity implements View.OnClickList
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                etCurrentPassword.setText("");
+                                etNewPassword.setText("");
 
-                            etCurrentPassword.setText("");
-                            etNewPassword.setText("");
+                                getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
-                            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                                Utils.showSnackBar(rootResetPassword, getResources().getString(R.string.password_updated), ResetPassword.this);
 
-                            Utils.showSnackBar(rootResetPassword, getResources().getString(R.string.password_updated), ResetPassword.this);
-
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(ResetPassword.this, getResources().getString(R.string.login), Toast.LENGTH_LONG).show();
-                                Utils.logout(ResetPassword.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(rootResetPassword, response.body().getMsg(), ResetPassword.this);
+
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(ResetPassword.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(ResetPassword.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(rootResetPassword, response.body().getMsg(), ResetPassword.this);
+                                }
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(ResetPassword.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ResetPassword.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(ResetPassword.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ResetPassword.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(ResetPassword.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ResetPassword.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(ResetPassword.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ResetPassword.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }

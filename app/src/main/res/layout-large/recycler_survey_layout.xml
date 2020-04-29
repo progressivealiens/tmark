@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="@dimen/dp_20">
+
+
+    <com.trackkers.tmark.customviews.MyTextview
+        android:id="@+id/tv_survey_question"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Question"
+        android:textStyle="bold"
+        android:textColor="@color/colorBlack"
+        android:textSize="@dimen/sp_16"/>
+
+    <RadioGroup
+        android:id="@+id/rg_answers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/dp_05"
+        android:paddingEnd="@dimen/dp_05"
+        android:layout_marginTop="@dimen/dp_10">
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+            android:id="@+id/rb_option_one"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorBlack"
+            android:textSize="@dimen/sp_15"
+            android:textStyle="bold"
+            app:buttonTint="@color/colorPrimary"
+            android:visibility="gone"/>
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+            android:id="@+id/rb_option_two"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dp_05"
+            android:textColor="@color/colorBlack"
+            android:textSize="@dimen/sp_15"
+            android:textStyle="bold"
+            app:buttonTint="@color/colorPrimary"
+            android:visibility="gone"/>
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+            android:id="@+id/rb_option_three"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dp_05"
+            android:textColor="@color/colorBlack"
+            android:textSize="@dimen/sp_15"
+            android:textStyle="bold"
+            app:buttonTint="@color/colorPrimary"
+            android:visibility="gone"/>
+
+        <androidx.appcompat.widget.AppCompatRadioButton
+            android:id="@+id/rb_option_four"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dp_05"
+            android:textColor="@color/colorBlack"
+            android:textSize="@dimen/sp_15"
+            android:textStyle="bold"
+            app:buttonTint="@color/colorPrimary"
+            android:visibility="gone"/>
+
+    </RadioGroup>
+
+</LinearLayout>

@@ -9,7 +9,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -51,6 +56,8 @@ import static android.os.Process.killProcess;
  */
 
 public class Utils {
+
+    //Old Version
     /*public static String BASE = "https://www.trackkers.com/api/";
     public static String BASE_IMAGE = "https://www.trackkers.com/public/storage/guardSelfie/";
     public static String BASE_IMAGE_OPERATIONS = "https://www.trackkers.com/public/uploads/communication/";
@@ -62,16 +69,29 @@ public class Utils {
     public static String BASE_IMAGE_DRIVING = "https://www.trackkers.com/public/uploads/drivingLicence/";
     public static String BASE_IMAGE_COMPANY = "https://www.trackkers.com/public/uploads/companyLogo/";*/
 
-    public static String BASE = "http://15.206.52.166/api/";
-    public static String BASE_IMAGE = "http://15.206.52.166/public/storage/guardSelfie/";
-    public static String BASE_IMAGE_OPERATIONS = "http://15.206.52.166/public/uploads/communication/";
-    public static String BASE_IMAGE_OPERATIONS_Checkin = "http://15.206.52.166/public/storage/operationalCheckInImages/";
-    public static String BASE_IMAGE_MEDICAL = "http://15.206.52.166/public/uploads/medical/";
-    public static String BASE_IMAGE_UANC = "http://15.206.52.166/public/uploads/uanc/";
-    public static String BASE_IMAGE_ESIC = "http://15.206.52.166/public/uploads/esic/";
-    public static String BASE_IMAGE_ADHAR = "http://15.206.52.166/public/uploads/adharphoto/";
-    public static String BASE_IMAGE_DRIVING = "http://15.206.52.166/public/uploads/drivingLicence/";
-    public static String BASE_IMAGE_COMPANY = "http://15.206.52.166/public/uploads/companyLogo/";
+    //Upcoming Version
+    public static String BASE = "https://www.trackkers.com/api/";
+    public static String BASE_IMAGE = "https://www.trackkers.com/storage/guardSelfie/";
+    public static String BASE_IMAGE_OPERATIONS = "https://www.trackkers.com/uploads/communication/";
+    public static String BASE_IMAGE_OPERATIONS_Checkin = "https://www.trackkers.com/storage/operationalCheckInImages/";
+    public static String BASE_IMAGE_MEDICAL = "https://www.trackkers.com/uploads/medical/";
+    public static String BASE_IMAGE_UANC = "https://www.trackkers.com/uploads/uanc/";
+    public static String BASE_IMAGE_ESIC = "https://www.trackkers.com/uploads/esic/";
+    public static String BASE_IMAGE_ADHAR = "https://www.trackkers.com/uploads/adharphoto/";
+    public static String BASE_IMAGE_DRIVING = "https://www.trackkers.com/uploads/drivingLicence/";
+    public static String BASE_IMAGE_COMPANY = "https://www.trackkers.com/uploads/companyLogo/";
+
+    //Current Version
+    /*public static String BASE = "http://15.206.52.166/api/";
+    public static String BASE_IMAGE = "http://15.206.52.166/storage/guardSelfie/";
+    public static String BASE_IMAGE_OPERATIONS = "http://15.206.52.166/uploads/communication/";
+    public static String BASE_IMAGE_OPERATIONS_Checkin = "http://15.206.52.166/storage/operationalCheckInImages/";
+    public static String BASE_IMAGE_MEDICAL = "http://15.206.52.166/uploads/medical/";
+    public static String BASE_IMAGE_UANC = "http://15.206.52.166/uploads/uanc/";
+    public static String BASE_IMAGE_ESIC = "http://15.206.52.166/uploads/esic/";
+    public static String BASE_IMAGE_ADHAR = "http://15.206.52.166/uploads/adharphoto/";
+    public static String BASE_IMAGE_DRIVING = "http://15.206.52.166/uploads/drivingLicence/";
+    public static String BASE_IMAGE_COMPANY = "http://15.206.52.166/uploads/companyLogo/";*/
 
     public static PrefData prefData;
 
@@ -120,7 +140,6 @@ public class Utils {
             new Intent().setComponent(new ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity")),
             new Intent().setComponent(new ComponentName("com.htc.pitroad", "com.htc.pitroad.landingpage.activity.LandingPageActivity")),
             new Intent().setComponent(new ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.MainActivity"))
-
     };
 
     public static boolean isLocationServicesEnabled(Context context) {
@@ -210,8 +229,13 @@ public class Utils {
         Log.e(key, value);
     }
 
-    public static void toast(Context context, String string) {
-        Toast.makeText(context, string, Toast.LENGTH_SHORT).show();
+    public static void showToast(Context context,String message,int duration,int BackgroundColor,int textColor){
+        Toast toast = Toast.makeText(context, message, duration);
+        View view = toast.getView();
+        view.getBackground().setColorFilter(BackgroundColor, PorterDuff.Mode.SRC_IN);
+        TextView text = view.findViewById(android.R.id.message);
+        text.setTextColor(textColor);
+        toast.show();
     }
 
     public static void showSnackBar(View view, String msg, TextInputEditText textView, Activity activity) {
@@ -365,13 +389,10 @@ public class Utils {
 
     public static long fromDateToMillis(String date) {
         long timeInMilliseconds = 0;
-        Log.e("date", date);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
         try {
             Date mDate = sdf.parse(date);
-            Log.e("mDate", mDate.toString());
             timeInMilliseconds = mDate.getTime();
-            Log.e("timeMillis", String.valueOf(timeInMilliseconds));
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -409,6 +430,35 @@ public class Utils {
         }
     }
 
+    public static String ConvertUTCtoISTFormat(String UTC){
+        Date date=null;
+        String formateDate="";
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzzz yyyy");
+        try {
+            date = formatter.parse(UTC);
+            formateDate = new SimpleDateFormat("hh:mm:ss a dd-MM-yyyy").format(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return formateDate;
+    }
+
+
+    public static Bitmap watermarkOnImage(Context context, Bitmap bitmap){
+        String timestamp = "TMark " + Utils.ConvertUTCtoISTFormat(PrefData.setExactTime());
+        Bitmap workingBitmap = Bitmap.createBitmap(bitmap);
+        Bitmap mutableBitmap = workingBitmap.copy(Bitmap.Config.ARGB_8888, true);
+        float scale = context.getResources().getDisplayMetrics().density;
+        Canvas canvas = new Canvas(mutableBitmap);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(context.getResources().getColor(R.color.colorRed));
+        paint.setTextSize((int) (15 * scale));
+        Rect bounds = new Rect();
+        paint.getTextBounds(timestamp, 0, timestamp.length(), bounds);
+        canvas.drawText(timestamp, 24, (mutableBitmap.getHeight() - 36), paint);
+        return mutableBitmap;
+    }
+
     public static void logout(Activity context, Class activity) {
         PrefData.writeBooleanPref(PrefData.PREF_LOGINSTATUS, false);
 
@@ -416,9 +466,7 @@ public class Utils {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
         context.startActivity(intent);
-        context.finish();
     }
 
 }

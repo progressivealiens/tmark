@@ -101,62 +101,59 @@ public class AssignedHistory extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                historyParents.clear();
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            historyParents.clear();
+                                try {
+                                    JSONObject json = new JSONObject(String.valueOf(new Gson().toJson(response.body())));
+                                    JSONArray array = json.getJSONArray("data");
+                                    for (int i = 0; i < array.length(); i++) {
+                                        JSONObject jsonObject = array.getJSONObject(i);
+                                        String siteName = jsonObject.getString("siteName");
+                                        String routeName = jsonObject.getString("routeName");
+                                        JSONArray newArray = jsonObject.getJSONArray("checkpoints");
+                                        List<HistoryChild> historyChildren = new ArrayList<>();
+                                        for (int j = 0; j < newArray.length(); j++) {
+                                            JSONObject newJson = newArray.getJSONObject(j);
+                                            String name = newJson.getString("name");
+                                            String dateTime = newJson.getString("dateTime");
+                                            String address = newJson.getString("address");
 
-                            try {
-                                JSONObject json = new JSONObject(String.valueOf(new Gson().toJson(response.body())));
-                                JSONArray array = json.getJSONArray("data");
-                                for (int i = 0; i < array.length(); i++) {
-                                    JSONObject jsonObject = array.getJSONObject(i);
-                                    String siteName = jsonObject.getString("siteName");
-                                    String routeName = jsonObject.getString("routeName");
-                                    JSONArray newArray = jsonObject.getJSONArray("checkpoints");
-                                    List<HistoryChild> historyChildren = new ArrayList<>();
-                                    for (int j = 0; j < newArray.length(); j++) {
-                                        JSONObject newJson = newArray.getJSONObject(j);
-                                        String name = newJson.getString("name");
-                                        String dateTime = newJson.getString("dateTime");
-                                        String address = newJson.getString("address");
-
-                                        historyChildren.add(new HistoryChild(name, dateTime, address));
+                                            historyChildren.add(new HistoryChild(name, dateTime, address));
+                                        }
+                                        historyParents.add(new HistoryParent(String.valueOf(i), historyChildren, siteName, routeName));
                                     }
-                                    historyParents.add(new HistoryParent(String.valueOf(i), historyChildren, siteName, routeName));
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
                                 }
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-                            mAdapter = new FOHistoryAdapter(historyParents);
-                            mainRecycler.setLayoutManager(new LinearLayoutManager(AssignedHistory.this));
-                            mainRecycler.setAdapter(mAdapter);
-                            mAdapter.notifyDataSetChanged();
+                                mAdapter = new FOHistoryAdapter(historyParents);
+                                mainRecycler.setLayoutManager(new LinearLayoutManager(AssignedHistory.this));
+                                mainRecycler.setAdapter(mAdapter);
+                                mAdapter.notifyDataSetChanged();
 
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(AssignedHistory.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(AssignedHistory.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(rootHistoryFo, response.body().getMsg(), AssignedHistory.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(AssignedHistory.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(AssignedHistory.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(AssignedHistory.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
+
                             }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(AssignedHistory.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignedHistory.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(AssignedHistory.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignedHistory.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(AssignedHistory.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignedHistory.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(AssignedHistory.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(AssignedHistory.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
-
                     }
-
                 }
 
                 @Override
@@ -165,7 +162,6 @@ public class AssignedHistory extends AppCompatActivity {
                     t.printStackTrace();
                 }
             });
-
         }
     }
 

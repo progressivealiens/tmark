@@ -1,5 +1,6 @@
 package com.trackkers.tmark.adapter.fieldofficer;
 
+import android.app.Activity;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +17,9 @@ import com.trackkers.tmark.customviews.MyTextview;
 import com.trackkers.tmark.helper.CheckNetworkConnection;
 import com.trackkers.tmark.helper.PrefData;
 import com.trackkers.tmark.helper.ProgressView;
+import com.trackkers.tmark.helper.Utils;
+import com.trackkers.tmark.views.activity.LoginActivity;
+import com.trackkers.tmark.views.activity.fieldofficer.AssignGuardFromRoute;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponse;
@@ -31,7 +35,7 @@ import retrofit2.Response;
 
 public class AssignedGuardOnRouteAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    Context context;
+    Activity context;
     List<ApiResponse.DataBean> guardsAssignedOnRoute = new ArrayList<>();
 
     PrefData prefData;
@@ -39,7 +43,7 @@ public class AssignedGuardOnRouteAdapter extends RecyclerView.Adapter<RecyclerVi
     ProgressView progressView;
 
 
-    public AssignedGuardOnRouteAdapter(Context context, List<ApiResponse.DataBean> guardsAssignedOnRoute) {
+    public AssignedGuardOnRouteAdapter(Activity context, List<ApiResponse.DataBean> guardsAssignedOnRoute) {
         this.context = context;
         this.guardsAssignedOnRoute = guardsAssignedOnRoute;
         prefData = new PrefData(context);
@@ -87,27 +91,35 @@ public class AssignedGuardOnRouteAdapter extends RecyclerView.Adapter<RecyclerVi
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(context.getString(R.string.success))) {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(context.getString(R.string.success))) {
 
-                            Toast.makeText(context, context.getResources().getString(R.string.guard_unassigned_sucess), Toast.LENGTH_SHORT).show();
+                                Utils.showToast(context, context.getResources().getString(R.string.guard_unassigned_sucess), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorLightGreen), context.getResources().getColor(R.color.colorWhite));
 
-                            guardsAssignedOnRoute.remove(position);
-                            notifyItemRemoved(position);
-                            notifyItemRangeChanged(position, guardsAssignedOnRoute.size());
+                                guardsAssignedOnRoute.remove(position);
+                                notifyItemRemoved(position);
+                                notifyItemRangeChanged(position, guardsAssignedOnRoute.size());
 
-                        } else {
-                            Toast.makeText(context, response.body().getMsg(), Toast.LENGTH_LONG).show();
+                            } else {
+
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+
+                                    Utils.showToast(context, context.getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(context, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(context, response.body().getMsg(), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                                }
+                            }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(context, context.getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(context, context.getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(context, context.getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(context, context.getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(context, context.getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(context, context.getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(context, context.getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(context, context.getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }

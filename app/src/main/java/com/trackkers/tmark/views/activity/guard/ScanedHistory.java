@@ -81,7 +81,6 @@ public class ScanedHistory extends AppCompatActivity implements View.OnClickList
         initialize();
 
         connectApiToGetGuardHistory();
-
     }
 
     private void initialize() {
@@ -122,68 +121,61 @@ public class ScanedHistory extends AppCompatActivity implements View.OnClickList
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                parentList.clear();
+                                try {
+                                    JSONObject json = new JSONObject(String.valueOf(new Gson().toJson(response.body())));
+                                    JSONArray array = json.getJSONArray("data");
+                                    for (int i = 0; i < array.length(); i++) {
+                                        JSONObject jsonObject = array.getJSONObject(i);
+                                        siteName = jsonObject.optString("siteName");
+                                        routeName = jsonObject.optString("routeName");
+                                        checkinTime = jsonObject.optString("checkInTime");
+                                        checkoutTime = jsonObject.optString("checkOutTime");
+                                        imageName = jsonObject.optString("startImageName");
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-
-                            parentList.clear();
-
-                            try {
-                                JSONObject json = new JSONObject(String.valueOf(new Gson().toJson(response.body())));
-                                JSONArray array = json.getJSONArray("data");
-                                for (int i = 0; i < array.length(); i++) {
-                                    JSONObject jsonObject = array.getJSONObject(i);
-                                    siteName = jsonObject.optString("siteName");
-                                    routeName = jsonObject.optString("routeName");
-                                    checkinTime = jsonObject.optString("checkInTime");
-                                    checkoutTime = jsonObject.optString("checkOutTime");
-                                    imageName = jsonObject.optString("startImageName");
-
-                                    JSONArray newArray = jsonObject.getJSONArray("checkPointsScanDetails");
-                                    List<ApiResponseHistoryGuard.DataBean.CheckPointsScanDetailsBean> childList = new ArrayList<>();
-                                    for (int j = 0; j < newArray.length(); j++) {
-                                        if (newArray.length() == 0) {
-                                            Log.e("length", String.valueOf(newArray.length()));
-                                        } else {
-                                            JSONObject newJson = newArray.getJSONObject(j);
-                                            name = newJson.optString("checkpointName");
-                                            date = newJson.optString("scanDate");
-                                            time = newJson.optString("scanTime");
-                                            roundNo = newJson.optInt("trip");
+                                        JSONArray newArray = jsonObject.getJSONArray("checkPointsScanDetails");
+                                        List<ApiResponseHistoryGuard.DataBean.CheckPointsScanDetailsBean> childList = new ArrayList<>();
+                                        for (int j = 0; j < newArray.length(); j++) {
+                                            if (newArray.length() == 0) {
+                                                Log.e("length", String.valueOf(newArray.length()));
+                                            } else {
+                                                JSONObject newJson = newArray.getJSONObject(j);
+                                                name = newJson.optString("checkpointName");
+                                                date = newJson.optString("scanDate");
+                                                time = newJson.optString("scanTime");
+                                                roundNo = newJson.optInt("trip");
+                                            }
+                                            childList.add(new ApiResponseHistoryGuard.DataBean.CheckPointsScanDetailsBean(name, date, time, roundNo));
                                         }
-                                        childList.add(new ApiResponseHistoryGuard.DataBean.CheckPointsScanDetailsBean(name, date, time, roundNo));
+                                        parentList.add(new ApiResponseHistoryGuard.DataBean(String.valueOf(i), childList, siteName, routeName, checkinTime, checkoutTime, imageName));
                                     }
-                                    parentList.add(new ApiResponseHistoryGuard.DataBean(String.valueOf(i), childList, siteName, routeName, checkinTime, checkoutTime, imageName));
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
                                 }
-
-
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-
-                            mAdapter = new ScannedHistoryGuardRecycler(parentList, ScanedHistory.this);
-                            recyclerScanHistory.setLayoutManager(new LinearLayoutManager(ScanedHistory.this));
-                            recyclerScanHistory.setAdapter(mAdapter);
-                            mAdapter.notifyDataSetChanged();
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(ScanedHistory.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(ScanedHistory.this, LoginActivity.class);
+                                mAdapter = new ScannedHistoryGuardRecycler(parentList, ScanedHistory.this);
+                                recyclerScanHistory.setLayoutManager(new LinearLayoutManager(ScanedHistory.this));
+                                recyclerScanHistory.setAdapter(mAdapter);
+                                mAdapter.notifyDataSetChanged();
                             } else {
-                                Utils.showSnackBar(rootScanHistory, response.body().getMsg(), ScanedHistory.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(ScanedHistory.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(ScanedHistory.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(ScanedHistory.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(ScanedHistory.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ScanedHistory.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(ScanedHistory.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ScanedHistory.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink),getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(ScanedHistory.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ScanedHistory.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(ScanedHistory.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ScanedHistory.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 

@@ -96,42 +96,40 @@ public class ProfileActivity extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
-
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            tvCompanyName.setText(PrefData.readStringPref(PrefData.company_name));
-                            tvEmpName.setText(response.body().getData().get(0).getName());
-                            tvEmpId.setText(response.body().getData().get(0).getEmpCode());
-                            tvEmpType.setText(PrefData.readStringPref(PrefData.employee_type));
-                            tvEmpDob.setText(response.body().getData().get(0).getDob());
-                            tvEmpDoj.setText(response.body().getData().get(0).getDoj());
-                            tvEmpMob.setText(response.body().getData().get(0).getMobile());
-                            tvEmpNationality.setText(response.body().getData().get(0).getNationality());
-                            tvEmpAddress.setText(response.body().getData().get(0).getAddress());
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(ProfileActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(ProfileActivity.this, LoginActivity.class);
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                tvCompanyName.setText(PrefData.readStringPref(PrefData.company_name));
+                                tvEmpName.setText(response.body().getData().get(0).getName());
+                                tvEmpId.setText(response.body().getData().get(0).getEmpCode());
+                                tvEmpType.setText(PrefData.readStringPref(PrefData.employee_type));
+                                tvEmpDob.setText(response.body().getData().get(0).getDob());
+                                tvEmpDoj.setText(response.body().getData().get(0).getDoj());
+                                tvEmpMob.setText(response.body().getData().get(0).getMobile());
+                                tvEmpNationality.setText(response.body().getData().get(0).getNationality());
+                                tvEmpAddress.setText(response.body().getData().get(0).getAddress());
                             } else {
-                                Utils.showSnackBar(rootProfile, response.body().getMsg(), ProfileActivity.this);
+
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(ProfileActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(ProfileActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(rootProfile, response.body().getMsg(), ProfileActivity.this);
+                                }
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(ProfileActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ProfileActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(ProfileActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ProfileActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(ProfileActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ProfileActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(ProfileActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(ProfileActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
-
                 }
-
                 @Override
                 public void onFailure(Call<ApiResponse> call, Throwable t) {
                     progressView.hideLoader();

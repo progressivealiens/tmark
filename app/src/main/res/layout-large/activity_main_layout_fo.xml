@@ -13,12 +13,17 @@
         android:layout_height="250dp"
         android:background="@drawable/arc_drawable">
 
-        <ImageView
+
+        <com.makeramen.roundedimageview.RoundedImageView
             android:id="@+id/iv_company_logo"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="@dimen/dp_80"
+            android:layout_height="@dimen/dp_80"
             android:layout_centerInParent="true"
-            android:scaleType="fitXY" />
+            android:scaleType="fitXY"
+            app:riv_border_color="@color/colorBlack"
+            app:riv_border_width="2dp"
+            app:riv_corner_radius="@dimen/dp_10"
+            app:riv_oval="false" />
 
         <com.trackkers.tmark.customviews.MyTextview
             android:id="@+id/tv_welcome"
@@ -47,34 +52,32 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <GridLayout
-                android:id="@+id/grid_layout"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:columnCount="2"
+                android:layout_height="wrap_content"
                 android:padding="@dimen/dp_10"
-                android:rowCount="2">
+                android:orientation="horizontal"
+                android:weightSum="1">
 
                 <androidx.cardview.widget.CardView
                     android:id="@+id/card_mark_attendance"
                     android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_rowWeight="1"
-                    android:layout_columnWeight="1"
-                    android:layout_marginStart="@dimen/dp_15"
-                    android:layout_marginEnd="@dimen/dp_15"
-                    android:layout_marginBottom="@dimen/dp_05"
+                    android:layout_height="@dimen/dp_120"
+                    android:layout_gravity="center"
+                    android:layout_weight=".5"
                     app:cardCornerRadius="@dimen/dp_10"
-                    app:cardElevation="@dimen/dp_10"
-                    app:cardPreventCornerOverlap="true">
+                    android:layout_marginStart="@dimen/dp_15"
+                    android:layout_marginEnd="@dimen/dp_10">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_gravity="center_horizontal|center_vertical"
-                        android:layout_margin="@dimen/dp_15"
+                        android:layout_margin="@dimen/dp_05"
+                        android:background="@drawable/rect_round_fo_options"
                         android:gravity="center"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:padding="@dimen/dp_05">
 
                         <ImageView
                             android:layout_width="wrap_content"
@@ -94,31 +97,27 @@
 
                     </LinearLayout>
 
-
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
                     android:id="@+id/card_site_details"
                     android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_rowWeight="1"
-                    android:layout_columnWeight="1"
-                    android:layout_marginStart="@dimen/dp_15"
-                    android:layout_marginEnd="@dimen/dp_15"
-                    android:layout_marginBottom="@dimen/dp_05"
+                    android:layout_height="@dimen/dp_120"
+                    android:layout_gravity="center"
+                    android:layout_weight=".5"
                     app:cardCornerRadius="@dimen/dp_10"
-                    app:cardElevation="@dimen/dp_10"
-                    app:cardPreventCornerOverlap="true"
-
-                    >
+                    android:layout_marginStart="@dimen/dp_10"
+                    android:layout_marginEnd="@dimen/dp_15">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_gravity="center_horizontal|center_vertical"
-                        android:layout_margin="@dimen/dp_10"
+                        android:layout_margin="@dimen/dp_05"
+                        android:background="@drawable/rect_round_fo_options"
                         android:gravity="center"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:padding="@dimen/dp_05">
 
                         <ImageView
                             android:layout_width="wrap_content"
@@ -140,27 +139,75 @@
 
                 </androidx.cardview.widget.CardView>
 
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/dp_10"
+                android:orientation="horizontal"
+                android:weightSum="1">
+
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/card_add_new_guard"
+                    android:id="@+id/card_view_documents"
                     android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_rowWeight="1"
-                    android:layout_columnWeight="1"
-                    android:layout_marginStart="@dimen/dp_15"
-                    android:layout_marginTop="@dimen/dp_15"
-                    android:layout_marginEnd="@dimen/dp_15"
-                    android:layout_marginBottom="@dimen/dp_05"
+                    android:layout_height="@dimen/dp_120"
+                    android:layout_gravity="center"
+                    android:layout_weight=".5"
                     app:cardCornerRadius="@dimen/dp_10"
-                    app:cardElevation="@dimen/dp_10"
-                    app:cardPreventCornerOverlap="true">
+                    android:layout_marginStart="@dimen/dp_15"
+                    android:layout_marginEnd="@dimen/dp_10">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_gravity="center_horizontal|center_vertical"
-                        android:layout_margin="@dimen/dp_15"
+                        android:layout_margin="@dimen/dp_05"
+                        android:background="@drawable/rect_round_fo_options"
                         android:gravity="center"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:padding="@dimen/dp_05">
+
+                        <ImageView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:src="@drawable/ic_image_black_24dp" />
+
+                        <com.trackkers.tmark.customviews.MyTextview
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/show_docs"
+                            android:textAlignment="center"
+                            android:textColor="@color/colorPrimary"
+                            android:textSize="@dimen/sp_18"
+                            android:textStyle="bold" />
+
+
+                    </LinearLayout>
+
+
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_add_new_guard"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/dp_120"
+                    android:layout_gravity="center"
+                    android:layout_weight=".5"
+                    app:cardCornerRadius="@dimen/dp_10"
+                    android:layout_marginStart="@dimen/dp_10"
+                    android:layout_marginEnd="@dimen/dp_15">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center_horizontal|center_vertical"
+                        android:layout_margin="@dimen/dp_05"
+                        android:background="@drawable/rect_round_fo_options"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="@dimen/dp_05">
 
                         <ImageView
                             android:layout_width="wrap_content"
@@ -180,30 +227,36 @@
 
                     </LinearLayout>
 
-
                 </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/dp_10"
+                android:orientation="horizontal"
+                android:weightSum="1">
 
                 <androidx.cardview.widget.CardView
                     android:id="@+id/card_assign_unassign_guard"
                     android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_rowWeight="1"
-                    android:layout_columnWeight="1"
-                    android:layout_marginStart="@dimen/dp_15"
-                    android:layout_marginTop="@dimen/dp_05"
-                    android:layout_marginEnd="@dimen/dp_15"
-                    android:layout_marginBottom="@dimen/dp_05"
+                    android:layout_height="@dimen/dp_120"
+                    android:layout_gravity="center"
+                    android:layout_weight=".5"
                     app:cardCornerRadius="@dimen/dp_10"
-                    app:cardElevation="@dimen/dp_10"
-                    app:cardPreventCornerOverlap="true">
+                    android:layout_marginStart="@dimen/dp_15"
+                    android:layout_marginEnd="@dimen/dp_10">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_gravity="center_horizontal|center_vertical"
-                        android:layout_margin="@dimen/dp_15"
+                        android:layout_margin="@dimen/dp_05"
+                        android:background="@drawable/rect_round_fo_options"
                         android:gravity="center"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:padding="@dimen/dp_05">
 
                         <ImageView
                             android:layout_width="wrap_content"
@@ -220,55 +273,50 @@
                             android:textSize="@dimen/sp_18"
                             android:textStyle="bold" />
 
-
                     </LinearLayout>
-
 
                 </androidx.cardview.widget.CardView>
 
-            </GridLayout>
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_verify_route"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/dp_120"
+                    android:layout_gravity="center"
+                    android:layout_weight=".5"
+                    app:cardCornerRadius="@dimen/dp_10"
+                    android:layout_marginStart="@dimen/dp_10"
+                    android:layout_marginEnd="@dimen/dp_15">
 
-            <androidx.cardview.widget.CardView
-                android:id="@+id/card_verify_route"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/dp_100"
-                android:layout_gravity="center"
-                android:layout_marginStart="@dimen/dp_100"
-                android:layout_marginTop="@dimen/dp_15"
-                android:layout_marginEnd="@dimen/dp_100"
-                android:layout_marginBottom="@dimen/dp_05"
-                app:cardCornerRadius="@dimen/dp_10"
-                app:cardElevation="@dimen/dp_10"
-                app:cardPreventCornerOverlap="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center_horizontal|center_vertical"
+                        android:layout_margin="@dimen/dp_05"
+                        android:background="@drawable/rect_round_fo_options"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="@dimen/dp_05">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center_horizontal|center_vertical"
-                    android:layout_margin="@dimen/dp_15"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                        <ImageView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:src="@drawable/ic_input_black_24dp" />
 
-                    <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:src="@drawable/ic_input_black_24dp" />
+                        <com.trackkers.tmark.customviews.MyTextview
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/verify_routes_lower"
+                            android:textAlignment="center"
+                            android:textColor="@color/colorPrimary"
+                            android:textSize="@dimen/sp_18"
+                            android:textStyle="bold" />
 
-                    <com.trackkers.tmark.customviews.MyTextview
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/verify_routes_lower"
-                        android:textAlignment="center"
-                        android:textColor="@color/colorPrimary"
-                        android:textSize="@dimen/sp_18"
-                        android:textStyle="bold" />
+                    </LinearLayout>
 
+                </androidx.cardview.widget.CardView>
 
-                </LinearLayout>
-
-
-            </androidx.cardview.widget.CardView>
+            </LinearLayout>
 
         </LinearLayout>
 

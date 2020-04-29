@@ -103,7 +103,7 @@ public class FOCheckpoints extends AppCompatActivity implements
     ApiInterface apiInterface;
     ProgressView progressView;
 
-    String scannedCheckpointId = "",scannedCheckpointType="";
+    String scannedCheckpointId = "", scannedCheckpointType = "";
 
     GoogleApiClient mGoogleApiClient;
     Location mLastLocation;
@@ -207,37 +207,35 @@ public class FOCheckpoints extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                foCheckpointsModels.clear();
+                                foCheckpointsModels.addAll(response.body().getData());
 
-                            foCheckpointsModels.clear();
-                            foCheckpointsModels.addAll(response.body().getData());
+                                mAdapter.notifyDataSetChanged();
 
-                            mAdapter.notifyDataSetChanged();
-
-                            tvSiteAddress.setText(response.body().getSiteAddress());
-                            tvRouteStartAddress.setText(response.body().getRouteStartAddress());
-                            tvRouteEndAddress.setText(response.body().getRouteEndAddress());
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(FOCheckpoints.this, LoginActivity.class);
+                                tvSiteAddress.setText(response.body().getSiteAddress());
+                                tvRouteStartAddress.setText(response.body().getRouteStartAddress());
+                                tvRouteEndAddress.setText(response.body().getRouteEndAddress());
                             } else {
-                                Utils.showSnackBar(rootCheckpoints, response.body().getMsg(), FOCheckpoints.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(FOCheckpoints.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(FOCheckpoints.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 
@@ -250,7 +248,6 @@ public class FOCheckpoints extends AppCompatActivity implements
                     t.printStackTrace();
                 }
             });
-
         }
     }
 
@@ -293,7 +290,7 @@ public class FOCheckpoints extends AppCompatActivity implements
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (result != null) {
             if (result.getContents() == null) {
-                Toast.makeText(this, getResources().getString(R.string.result_not_found), Toast.LENGTH_SHORT).show();
+                Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.result_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             } else {
                 try {
                     JSONObject jObj = new JSONObject(result.getContents());
@@ -308,7 +305,7 @@ public class FOCheckpoints extends AppCompatActivity implements
                     connectApiToVerifyCheckpoint();
 
                 } else {
-                    Toast.makeText(this, R.string.wrong_qr, Toast.LENGTH_SHORT).show();
+                    Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.wrong_qr), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 }
             }
         }
@@ -319,7 +316,7 @@ public class FOCheckpoints extends AppCompatActivity implements
         if (CheckNetworkConnection.isConnection1(FOCheckpoints.this, true)) {
             progressView.showLoader();
             if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
-                Toast.makeText(this, R.string.unable_to_fetch, Toast.LENGTH_SHORT).show();
+                Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.unable_to_fetch), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
 
                 progressView.hideLoader();
             } else {
@@ -334,45 +331,40 @@ public class FOCheckpoints extends AppCompatActivity implements
                 call.enqueue(new Callback<ApiResponse>() {
                     @Override
                     public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
-
                         progressView.hideLoader();
-
                         try {
+                            if (response.body() != null && response.body().getStatus() != null) {
+                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                    Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.chk_verified), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                    foCheckpointsModels.clear();
+                                    foCheckpointsModels.addAll(response.body().getData());
 
-                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                                Toast.makeText(FOCheckpoints.this, R.string.chk_verified, Toast.LENGTH_SHORT).show();
+                                    tvSiteAddress.setText(response.body().getSiteAddress());
+                                    tvRouteStartAddress.setText(response.body().getRouteStartAddress());
+                                    tvRouteEndAddress.setText(response.body().getRouteEndAddress());
 
-                                foCheckpointsModels.clear();
-                                foCheckpointsModels.addAll(response.body().getData());
+                                    mAdapter.notifyDataSetChanged();
 
-                                tvSiteAddress.setText(response.body().getSiteAddress());
-                                tvRouteStartAddress.setText(response.body().getRouteStartAddress());
-                                tvRouteEndAddress.setText(response.body().getRouteEndAddress());
-
-                                mAdapter.notifyDataSetChanged();
-
-                            }  else {
-
-                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                    Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                    Utils.logout(FOCheckpoints.this, LoginActivity.class);
                                 } else {
-                                    Utils.showSnackBar(rootCheckpoints, response.body().getMsg(), FOCheckpoints.this);
+                                    if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                        Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                        Utils.logout(FOCheckpoints.this, LoginActivity.class);
+                                    } else {
+                                        Utils.showToast(FOCheckpoints.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    }
                                 }
                             }
-
                         } catch (Exception e) {
                             if (response.code() == 400) {
-                                Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                                Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                             } else if (response.code() == 500) {
-                                Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                                Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                             } else if (response.code() == 404) {
-                                Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                                Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                             } else {
-                                Toast.makeText(FOCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                                Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                             }
                             e.printStackTrace();
-
                         }
                     }
 
@@ -413,23 +405,19 @@ public class FOCheckpoints extends AppCompatActivity implements
     public void onLocationChanged(Location location) {
         mLastLocation = location;
 
-        Log.e("onLOcationChanged",location.toString());
+        Log.e("onLOcationChanged", location.toString());
         if (mLastLocation != null && mLastLocation.hasAccuracy()) {
             if (mLastLocation.getAccuracy() <= 30) {
                 currentLatitude = mLastLocation.getLatitude();
                 currentLongitude = mLastLocation.getLongitude();
 
-
-
                 if (mGoogleMap != null) {
                     mGoogleMap.clear();
-
                     mLatLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
                     MarkerOptions markerOptions = new MarkerOptions().position(mLatLng).title(getString(R.string.you_r_here));
-                    CameraUpdate cameraUpdate =CameraUpdateFactory.newLatLngZoom(mLatLng,15);
+                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(mLatLng, 15);
                     mGoogleMap.animateCamera(cameraUpdate);
                     mGoogleMap.addMarker(markerOptions);
-
                 }
             }
         }
@@ -456,10 +444,7 @@ public class FOCheckpoints extends AppCompatActivity implements
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         builder = new LocationSettingsRequest.Builder().addLocationRequest(mLocationRequest);
 
-        Task<LocationSettingsResponse> result =
-                LocationServices.getSettingsClient(this)
-                        .checkLocationSettings(builder.build());
-
+        Task<LocationSettingsResponse> result = LocationServices.getSettingsClient(this).checkLocationSettings(builder.build());
         result.addOnCompleteListener(task -> {
             try {
                 LocationSettingsResponse response = task.getResult(ApiException.class);
@@ -510,7 +495,7 @@ public class FOCheckpoints extends AppCompatActivity implements
                     buildGoogleApiClient();
                 }
             } else if (grantResults[0] == PackageManager.PERMISSION_DENIED || grantResults[1] == PackageManager.PERMISSION_DENIED || grantResults[2] == PackageManager.PERMISSION_DENIED) {
-                Toast.makeText(FOCheckpoints.this, R.string.sorry_cant_use, Toast.LENGTH_LONG).show();
+                Utils.showToast(FOCheckpoints.this, getResources().getString(R.string.sorry_cant_use), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 startRequestPermission();
             }
         }

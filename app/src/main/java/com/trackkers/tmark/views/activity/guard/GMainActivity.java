@@ -42,6 +42,7 @@ import com.trackkers.tmark.services.AlarmService;
 import com.trackkers.tmark.views.activity.LoginActivity;
 import com.trackkers.tmark.views.activity.ProfileActivity;
 import com.trackkers.tmark.views.activity.ResetPassword;
+import com.trackkers.tmark.views.activity.fieldofficer.FOMainActivity;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponse;
@@ -212,44 +213,42 @@ public class GMainActivity extends AppCompatActivity implements NavigationView.O
                     progressView.hideLoader();
 
                     try {
-
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            assignedRouteModels.clear();
-                            assignedRouteModels.addAll(response.body().getData());
-                            PrefData.writeStringPref(PrefData.guard_name, response.body().getGuardName());
-                            if (assignedRouteModels.isEmpty()) {
-                                recyclerRouteGuard.setVisibility(View.GONE);
-                                emptyView.setVisibility(View.VISIBLE);
-                                emptyView.setText(response.body().getMsg());
-                                swipeContainerGuard.setRefreshing(false);
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                assignedRouteModels.clear();
+                                assignedRouteModels.addAll(response.body().getData());
+                                PrefData.writeStringPref(PrefData.guard_name, response.body().getGuardName());
+                                if (assignedRouteModels.isEmpty()) {
+                                    recyclerRouteGuard.setVisibility(View.GONE);
+                                    emptyView.setVisibility(View.VISIBLE);
+                                    emptyView.setText(response.body().getMsg());
+                                    swipeContainerGuard.setRefreshing(false);
+                                } else {
+                                    recyclerRouteGuard.setVisibility(View.VISIBLE);
+                                    emptyView.setVisibility(View.GONE);
+                                    swipeContainerGuard.setRefreshing(false);
+                                    mAdapter.notifyDataSetChanged();
+                                }
                             } else {
-                                recyclerRouteGuard.setVisibility(View.VISIBLE);
-                                emptyView.setVisibility(View.GONE);
-                                swipeContainerGuard.setRefreshing(false);
-                                mAdapter.notifyDataSetChanged();
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(GMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(GMainActivity.this, LoginActivity.class);
+                                    swipeContainerGuard.setRefreshing(false);
+                                } else {
+                                    Utils.showToast(GMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    swipeContainerGuard.setRefreshing(false);
+                                }
                             }
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(GMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(GMainActivity.this, LoginActivity.class);
-                                swipeContainerGuard.setRefreshing(false);
-                            } else {
-                                Utils.showSnackBar(drawerLayout, response.body().getMsg(), GMainActivity.this);
-                                swipeContainerGuard.setRefreshing(false);
-                            }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(GMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(GMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink),getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(GMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(GMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 
@@ -311,7 +310,7 @@ public class GMainActivity extends AppCompatActivity implements NavigationView.O
         try {
             startActivity(myAppLinkToMarket);
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, getResources().getString(R.string.unable_to_find), Toast.LENGTH_LONG).show();
+            Utils.showToast(this, getResources().getString(R.string.unable_to_find), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
         }
     }
 
@@ -328,23 +327,28 @@ public class GMainActivity extends AppCompatActivity implements NavigationView.O
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     progressView.hideLoader();
                     try {
-
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            Toast.makeText(GMainActivity.this, R.string.logout_sucessfull, Toast.LENGTH_SHORT).show();
-                            logout();
-                        } else {
-                            Utils.showSnackBar(drawerLayout, response.body().getMsg(), GMainActivity.this);
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                Utils.showToast(GMainActivity.this, getResources().getString(R.string.logout_sucessfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                logout();
+                            } else {
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(GMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(GMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(GMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
+                            }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(GMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(GMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink),getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(GMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(GMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(GMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 

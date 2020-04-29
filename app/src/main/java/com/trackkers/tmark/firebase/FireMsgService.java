@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -22,7 +23,11 @@ import com.google.firebase.messaging.RemoteMessage;
 import com.trackkers.tmark.R;
 import com.trackkers.tmark.helper.PrefData;
 import com.trackkers.tmark.services.LiveTrackingForOperations;
+import com.trackkers.tmark.views.activity.LockActivity;
+import com.trackkers.tmark.views.activity.ShowNotificationActivity;
 import com.trackkers.tmark.views.activity.fieldofficer.FOMarkAttendance;
+import com.trackkers.tmark.views.activity.fieldofficer.SiteDetailsActivity;
+import com.trackkers.tmark.views.activity.guard.GMainActivity;
 import com.trackkers.tmark.views.activity.operations.OperationsMainActivity;
 
 /**
@@ -33,12 +38,12 @@ public class FireMsgService extends FirebaseMessagingService {
 
     public int NOTIFICATION_CHANNEL_ID = 1234;
     Intent intent;
-    String title = "", subject = "", body = "", flag = "";
+    String title = "", subject = "", body = "", flag = "", notificationType = "0";
     Uri defaultSoundUri;
     PendingIntent pendingIntent;
 
     @Override
-    public void onMessageReceived(RemoteMessage remoteMessage) {
+    public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
         Log.e("firebaseMessage", "" + remoteMessage.getData());
@@ -51,16 +56,14 @@ public class FireMsgService extends FirebaseMessagingService {
     private void receiveData(RemoteMessage remoteMessage) {
 
         if (remoteMessage.getData().size() > 0) {
-            Log.e("insideNotification", "insideNotification");
             title = remoteMessage.getData().get("title");
             subject = remoteMessage.getData().get("subject");
             body = remoteMessage.getData().get("body");
             flag = remoteMessage.getData().get("flag");
-
+            notificationType = remoteMessage.getData().get("notificationType");
 
             if (flag != null && flag.equalsIgnoreCase("working")) {
-                Log.e("helloWorking", "helloWorking");
-                if (FOMarkAttendance.isServiceRunning){
+                if (FOMarkAttendance.isServiceRunning) {
                     startService(new Intent(this, LiveTrackingForOperations.class));
                 }
 
@@ -70,7 +73,6 @@ public class FireMsgService extends FirebaseMessagingService {
                     createNotificationBelowOreo(0);
 
             } else {
-                Log.e("helloWorkingElse", "helloWorkingElse");
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                     createNotificationAboveOreo(1);
                 else
@@ -83,7 +85,7 @@ public class FireMsgService extends FirebaseMessagingService {
     private void createNotificationAboveOreo(int Flag) {
 
         try {
-            if (Flag == 1){
+            if (Flag == 1) {
                 defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                 Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), defaultSoundUri);
                 r.play();
@@ -93,10 +95,25 @@ public class FireMsgService extends FirebaseMessagingService {
             e.printStackTrace();
         }
 
-        if (PrefData.readStringPref(PrefData.employee_type).equalsIgnoreCase("Field Officer")) {
-            intent = new Intent(this, FOMarkAttendance.class);
+        if (notificationType != null) {
+            if (notificationType.equalsIgnoreCase("checkin")) {
+                if (PrefData.readStringPref(PrefData.employee_type).equalsIgnoreCase("Field Officer")) {
+                    intent = new Intent(this, FOMarkAttendance.class);
+                } else if (PrefData.readStringPref(PrefData.employee_type).equalsIgnoreCase("Guard")) {
+                    intent = new Intent(this, GMainActivity.class);
+                } else {
+                    intent = new Intent(this, OperationsMainActivity.class);
+                }
+            } else if (notificationType.equalsIgnoreCase("show")) {
+                intent = new Intent(this, ShowNotificationActivity.class);
+                intent.putExtra("NotificationTitle", title);
+                intent.putExtra("NotificationSubject", subject);
+                intent.putExtra("NotificationMessage", body);
+            } else if (notificationType.equalsIgnoreCase("site")) {
+                intent = new Intent(this, SiteDetailsActivity.class);
+            }
         } else {
-            intent = new Intent(this, OperationsMainActivity.class);
+            intent = new Intent(this, LockActivity.class);
         }
 
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -114,7 +131,7 @@ public class FireMsgService extends FirebaseMessagingService {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setSmallIcon(R.drawable.t_mark_logo_final)
                 .setContentTitle(title)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(subject+"\n"+body))
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(subject + "\n" + body))
                 .setAutoCancel(true)
                 .setLights(Color.BLUE, 500, 500)
                 .setContentIntent(pendingIntent)
@@ -129,7 +146,7 @@ public class FireMsgService extends FirebaseMessagingService {
     private void createNotificationBelowOreo(int Flag) {
 
         try {
-            if (Flag==1){
+            if (Flag == 1) {
                 defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                 Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), defaultSoundUri);
                 r.play();
@@ -137,11 +154,25 @@ public class FireMsgService extends FirebaseMessagingService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        if (PrefData.readStringPref(PrefData.employee_type).equalsIgnoreCase("Field Officer")) {
-            intent = new Intent(this, FOMarkAttendance.class);
+        if (notificationType != null) {
+            if (notificationType.equalsIgnoreCase("checkin")) {
+                if (PrefData.readStringPref(PrefData.employee_type).equalsIgnoreCase("Field Officer")) {
+                    intent = new Intent(this, FOMarkAttendance.class);
+                } else if (PrefData.readStringPref(PrefData.employee_type).equalsIgnoreCase("Guard")) {
+                    intent = new Intent(this, GMainActivity.class);
+                } else {
+                    intent = new Intent(this, OperationsMainActivity.class);
+                }
+            } else if (notificationType.equalsIgnoreCase("show")) {
+                intent = new Intent(this, ShowNotificationActivity.class);
+                intent.putExtra("NotificationTitle", title);
+                intent.putExtra("NotificationSubject", subject);
+                intent.putExtra("NotificationMessage", body);
+            } else if (notificationType.equalsIgnoreCase("site")) {
+                intent = new Intent(this, SiteDetailsActivity.class);
+            }
         } else {
-            intent = new Intent(this, OperationsMainActivity.class);
+            intent = new Intent(this, LockActivity.class);
         }
 
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -152,10 +183,11 @@ public class FireMsgService extends FirebaseMessagingService {
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this)
                         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                        .setSmallIcon(R.drawable.t_mark_logo_final)
+                        .setSmallIcon(R.drawable.ic_notification_icon_tmark)
+                        .setColor(getResources().getColor(R.color.colorPrimary))
                         .setPriority(Notification.PRIORITY_MAX)
                         .setContentTitle(title)
-                        .setStyle(new NotificationCompat.BigTextStyle().bigText(subject+"\n"+body))
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(subject + "\n" + body))
                         .setDefaults(Notification.DEFAULT_LIGHTS)
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(true);

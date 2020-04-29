@@ -26,6 +26,7 @@ import com.trackkers.tmark.helper.CheckNetworkConnection;
 import com.trackkers.tmark.helper.PrefData;
 import com.trackkers.tmark.helper.ProgressView;
 import com.trackkers.tmark.helper.Utils;
+import com.trackkers.tmark.views.activity.LoginActivity;
 import com.trackkers.tmark.webApi.ApiClient;
 import com.trackkers.tmark.webApi.ApiInterface;
 import com.trackkers.tmark.webApi.ApiResponse;
@@ -69,7 +70,7 @@ public class BulkGuardHistory extends AppCompatActivity {
     PrefData prefData;
 
     String empId = "";
-    String SelectedDate = "", formatSelectedDate = "";
+    String SelectedDate = "", formatSelectedDate = "", siteName="",siteNameCapitalLetter="";
     long timeStamp;
 
     List<ApiResponseOperations.DataBean.EmployeesBean> employeeDetails;
@@ -125,7 +126,7 @@ public class BulkGuardHistory extends AppCompatActivity {
 
 
                 if (empId.equalsIgnoreCase("")) {
-                    Toast.makeText(BulkGuardHistory.this, R.string.please_select_guard, Toast.LENGTH_SHORT).show();
+                    Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.please_select_guard), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
                 } else {
                     connectApiToFetchBulkGuardHistory();
                 }
@@ -177,33 +178,43 @@ public class BulkGuardHistory extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                PrefData.writeStringPref(PrefData.route_id, String.valueOf(response.body().getData().get(0).getRouteId()));
+                                PrefData.writeStringPref(PrefData.route_name, response.body().getData().get(0).getRouteName());
+                                PrefData.writeStringPref(PrefData.route_start_address, response.body().getData().get(0).getRouteStartAddress());
+                                PrefData.writeStringPref(PrefData.route_end_address, response.body().getData().get(0).getRouteEndAddress());
 
-                            PrefData.writeStringPref(PrefData.route_id, String.valueOf(response.body().getData().get(0).getRouteId()));
-                            PrefData.writeStringPref(PrefData.route_name, response.body().getData().get(0).getRouteName());
-                            PrefData.writeStringPref(PrefData.route_start_address, response.body().getData().get(0).getRouteStartAddress());
-                            PrefData.writeStringPref(PrefData.route_end_address, response.body().getData().get(0).getRouteEndAddress());
-                            PrefData.writeStringPref(PrefData.site_name, response.body().getData().get(0).getSiteName());
+                                siteName=response.body().getData().get(0).getSiteName();
+                                siteNameCapitalLetter = siteName.substring(0, 1).toUpperCase() + siteName.substring(1);
+                                PrefData.writeStringPref(PrefData.site_name, siteNameCapitalLetter);
 
-                            employeeDetails.clear();
-                            employeeDetails.addAll(response.body().getData().get(0).getEmployees());
+                                employeeDetails.clear();
+                                employeeDetails.addAll(response.body().getData().get(0).getEmployees());
 
-                            spGuards.setAdapter(new GuardDetailsAdapter(BulkGuardHistory.this, employeeDetails));
+                                spGuards.setAdapter(new GuardDetailsAdapter(BulkGuardHistory.this, employeeDetails));
 
-                        } else {
-                            Utils.showSnackBar(rootBulkGuardsHistory, response.body().getMsg(), BulkGuardHistory.this);
+                            } else {
+
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(BulkGuardHistory.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(BulkGuardHistory.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
+
+                            }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(BulkGuardHistory.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(BulkGuardHistory.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(BulkGuardHistory.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(BulkGuardHistory.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 
@@ -234,28 +245,28 @@ public class BulkGuardHistory extends AppCompatActivity {
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase("success")) {
 
-                        if (response.body().getStatus().equalsIgnoreCase("success")) {
+                                bulkGuardHistoryData.clear();
+                                bulkGuardHistoryData.addAll(response.body().getData());
 
-                            bulkGuardHistoryData.clear();
-                            bulkGuardHistoryData.addAll(response.body().getData());
-
-                            mAdapter.notifyDataSetChanged();
-                        } else {
-                            bulkGuardHistoryData.clear();
-                            mAdapter.notifyDataSetChanged();
-                            Utils.showSnackBar(rootBulkGuardsHistory, response.body().getMsg(), BulkGuardHistory.this);
+                                mAdapter.notifyDataSetChanged();
+                            } else {
+                                bulkGuardHistoryData.clear();
+                                mAdapter.notifyDataSetChanged();
+                                Utils.showSnackBar(rootBulkGuardsHistory, response.body().getMsg(), BulkGuardHistory.this);
+                            }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(BulkGuardHistory.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(BulkGuardHistory.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(BulkGuardHistory.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(BulkGuardHistory.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(BulkGuardHistory.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
 

@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,6 +32,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -91,10 +93,13 @@ public class AlarmService extends Service {
                         locationOneRef.setValue(locationModel, new DatabaseReference.CompletionListener() {
                             @Override
                             public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                                if (databaseError != null) {
-                                    Log.e("dataError", "Data could not be saved" + databaseError.getMessage());
-                                } else {
-                                    Log.e("dataSucess", "Data saved successfully.");
+                                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                                if (user != null) {
+                                    if (databaseError != null) {
+                                        Log.e("dataError", "Data could not be saved" + databaseError.getMessage());
+                                    } else {
+                                        Log.e("dataSucess", "Data saved successfully.");
+                                    }
                                 }
                             }
                         });
@@ -163,7 +168,12 @@ public class AlarmService extends Service {
             @Override
             public void onComplete(Task<AuthResult> task) {
                 if (task.isSuccessful() && task.isComplete()) {
-                    requestLocUpdate();
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if (user != null) {
+                        requestLocUpdate();
+                    } else {
+                        Toast.makeText(AlarmService.this, "Unable to identify the user. Please logout and login again", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     Log.e("loginFailedFirebase", task.getException().getMessage());
                 }
@@ -190,11 +200,17 @@ public class AlarmService extends Service {
 
             @Override
             public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
-                if (databaseError != null) {
-                    Log.e("dataError", "Data could not be deleted" + databaseError.getMessage());
-                } else {
-                    Log.e("dataSucess", "Data deleted successfully.");
+
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null) {
+                    if (databaseError != null) {
+                        Log.e("dataError", "Data could not be deleted" + databaseError.getMessage());
+                    } else {
+                        Log.e("dataSucess", "Data deleted successfully.");
+                    }
                 }
+
+
             }
         });
     }
@@ -217,8 +233,8 @@ public class AlarmService extends Service {
 
         AlarmManager alarm = (AlarmManager) con.getSystemService(Context.ALARM_SERVICE);
 
-        long delay, when, checkinTime = 0, nextAlarm, remainingMilliToRing = 0;
-        int timeInterval = 0;
+        long delay, when, checkinTime, nextAlarm, remainingMilliToRing = 0;
+        int timeInterval;
 
         checkinTime = PrefData.readLongPref(PrefData.checkin_time);
         timeInterval = Integer.valueOf(PrefData.readStringPref(PrefData.timeInterval));
@@ -231,13 +247,14 @@ public class AlarmService extends Service {
                 remainingMilliToRing = i;
             }
             nextAlarm = remainingMilliToRing + delay;
-
+            Log.e("nextAlarm", "" + nextAlarm);
+            /* fire the alarm */
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 alarm.setExact(AlarmManager.RTC_WAKEUP, nextAlarm, getPendingIntent(con));
             } else {
                 alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextAlarm, getPendingIntent(con));
             }
-            /* fire the broadcast */
+
         }
     }
 

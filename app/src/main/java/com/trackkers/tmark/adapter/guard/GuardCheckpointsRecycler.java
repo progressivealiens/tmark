@@ -1,7 +1,6 @@
 package com.trackkers.tmark.adapter.guard;
 
-import android.content.Context;
-import android.util.Log;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,10 +9,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.trackkers.tmark.R;
+import com.trackkers.tmark.helper.PictureCapturingListener;
 import com.trackkers.tmark.helper.PrefData;
+import com.trackkers.tmark.helper.Utils;
 import com.trackkers.tmark.views.activity.guard.GCheckpoints;
 import com.trackkers.tmark.webApi.ApiResponse;
 
@@ -25,12 +27,14 @@ import butterknife.ButterKnife;
 
 public class GuardCheckpointsRecycler extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private Context context;
+    private AppCompatActivity context;
     private List<ApiResponse.DataBean> guardCheckpointsModels = new ArrayList<>();
+    PictureCapturingListener pictureCapturingListener;
 
-    public GuardCheckpointsRecycler(Context context, List<ApiResponse.DataBean> guardCheckpointsModels) {
+    public GuardCheckpointsRecycler(AppCompatActivity context, List<ApiResponse.DataBean> guardCheckpointsModels, PictureCapturingListener pictureCapturingListener) {
         this.context = context;
         this.guardCheckpointsModels = guardCheckpointsModels;
+        this.pictureCapturingListener = pictureCapturingListener;
     }
 
     @NonNull
@@ -57,13 +61,23 @@ public class GuardCheckpointsRecycler extends RecyclerView.Adapter<RecyclerView.
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                PrefData.writeStringPref(PrefData.checkpoint_id, String.valueOf(guardCheckpointsModels.get(i).getCheckPointId()));
-                PrefData.writeStringPref(PrefData.checkpoint_id_position, String.valueOf(i));
-                Toast.makeText(context, context.getResources().getString(R.string.volume_up_for_torch), Toast.LENGTH_LONG).show();
-                Log.e("adapterCheckpointId",String.valueOf(guardCheckpointsModels.get(i).getCheckPointId()));
-                GCheckpoints.qrScan.setOrientationLocked(true);
-                GCheckpoints.qrScan.initiateScan();
 
+                if (guardCheckpointsModels.get(i).isIsVerified()) {
+                    Utils.showToast(context, context.getString(R.string.checkpoints_already_verified), Toast.LENGTH_SHORT, context.getResources().getColor(R.color.colorPink), context.getResources().getColor(R.color.colorWhite));
+                } else {
+                    PrefData.writeStringPref(PrefData.checkpoint_id, String.valueOf(guardCheckpointsModels.get(i).getCheckPointId()));
+                    PrefData.writeStringPref(PrefData.checkpoint_id_position, String.valueOf(i));
+                    GCheckpoints.progressView.showLoader();
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            GCheckpoints.isSpyImageTaken = false;
+                            GCheckpoints.isSpyImageFound = false;
+                            GCheckpoints.pictureService.startCapturing(pictureCapturingListener);
+                        }
+                    }, 200);
+                }
             }
         });
     }

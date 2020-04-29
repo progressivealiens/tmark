@@ -122,7 +122,7 @@ public class ScannedHistoryGuardRecycler extends ExpandableRecyclerViewAdapter<S
             tvCheckpointName.setText(PrefData.getInstance().getResources().getString(R.string.checkpoint_name) + " " + chkDetails.getCheckpointName());
             tvCheckpointDate.setText(PrefData.getInstance().getResources().getString(R.string.date) + " " + chkDetails.getScanDate());
             tvCheckpointTime.setText(PrefData.getInstance().getResources().getString(R.string.time) + " " + chkDetails.getScanTime());
-            tvCheckpointRoundNo.setText(PrefData.getInstance().getResources().getString(R.string.round_number) + " " + String.valueOf(chkDetails.getTrip()));
+            tvCheckpointRoundNo.setText(PrefData.getInstance().getResources().getString(R.string.round_number) + " " + chkDetails.getTrip());
         }
     }
 

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/colorLightCyan">
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textSize="@dimen/sp_18"
+            android:textColor="@color/colorWhite"
+            android:textStyle="bold"
+            android:padding="@dimen/dp_10"
+            android:text="@string/site_visit_report"/>
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:id="@+id/tv_site_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textSize="@dimen/sp_17"
+            android:textColor="@color/colorGrey"
+            android:textStyle="bold"
+            android:paddingTop="@dimen/dp_05" />
+
+        <com.trackkers.tmark.customviews.MyTextview
+            android:id="@+id/tv_survey_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textSize="@dimen/sp_17"
+            android:textColor="@color/colorGrey"
+            android:textStyle="bold"
+            android:paddingTop="@dimen/dp_05"
+            android:paddingBottom="@dimen/dp_10" />
+
+
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_survey"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="@dimen/dp_10"
+        android:weightSum="1">
+
+        <com.trackkers.tmark.customviews.MyButton
+            android:id="@+id/btn_dialog_cancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/dp_05"
+            android:layout_weight=".5"
+            android:background="@drawable/selector_button"
+            android:text="@string/cancel"
+            android:textColor="@drawable/text_selector" />
+
+        <com.trackkers.tmark.customviews.MyButton
+            android:id="@+id/btn_dialog_submit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/dp_05"
+            android:layout_weight=".5"
+            android:background="@drawable/selector_button"
+            android:text="@string/submit"
+            android:textColor="@drawable/text_selector" />
+
+
+    </LinearLayout>
+
+</LinearLayout>

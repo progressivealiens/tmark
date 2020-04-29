@@ -11,8 +11,10 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.Typeface;
 import android.location.Location;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +22,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.util.DisplayMetrics;
@@ -37,6 +40,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
@@ -72,6 +76,7 @@ import com.makeramen.roundedimageview.RoundedImageView;
 import com.squareup.picasso.Picasso;
 import com.trackkers.tmark.R;
 import com.trackkers.tmark.customviews.CustomTypefaceSpan;
+import com.trackkers.tmark.customviews.MyButton;
 import com.trackkers.tmark.customviews.MyTextview;
 import com.trackkers.tmark.helper.CheckNetworkConnection;
 import com.trackkers.tmark.helper.PictureCapturingListener;
@@ -95,6 +100,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 import java.util.TreeMap;
 
@@ -129,6 +136,8 @@ public class OperationsMainActivity extends AppCompatActivity implements
     DrawerLayout drawerLayout;
     @BindView(R.id.tv_name)
     MyTextview tvName;
+    @BindView(R.id.tv_view_notice)
+    MyTextview tvViewNotice;
     @BindView(R.id.tv_company_name)
     MyTextview tvCompanyName;
     @BindView(R.id.tv_emp_id)
@@ -155,15 +164,23 @@ public class OperationsMainActivity extends AppCompatActivity implements
     SwitchCompat switchLanguage;
     @BindView(R.id.fab_scan)
     FloatingActionButton fabScan;
+    @BindView(R.id.tv_last_checkin)
+    MyTextview tvLastCheckin;
+    @BindView(R.id.tv_total_qr_scan)
+    MyTextview tvTotalQrScan;
+    @BindView(R.id.tv_sos)
+    MyTextview tvSos;
 
     PrefData prefData;
     ApiInterface apiInterface;
     ProgressView progressView;
 
-    String imagePath = "", checkinMessage = "", commentImagePath = "", commentText = "", commentType = "";
+    String checkinMessage = "", commentText = "", commentType = "";
+    String notice = "", currentDateAndTime = "";
+    int totalScannedQr = 0;
     double currentLatitude, currentLongitude;
-    File file, commentFile,spyFile;
-    public boolean isConveyanceAsked = false, isLiveTrackingEnabled = false,isSpyImageTaken=false;
+    File file, commentFile, spyFile;
+    public boolean isConveyanceAsked = false, isLiveTrackingEnabled = false, isSpyImageTaken = false, isSpyImageFound = false;
     Dialog dialog;
 
     MyTextview companyName, employeeType;
@@ -190,6 +207,8 @@ public class OperationsMainActivity extends AppCompatActivity implements
 
     IntentIntegrator qrScanOperations;
     String scannedCheckpointId = "", scannedCheckpointType = "";
+
+
     private APictureCapturingService pictureService;
 
     @Override
@@ -226,40 +245,8 @@ public class OperationsMainActivity extends AppCompatActivity implements
         connectApiToFetchProfileDetails();
     }
 
-    private void showDialogToAskForAutoStartUp() {
-        final Dialog dialog = new Dialog(OperationsMainActivity.this);
-        dialog.setCancelable(false);
-        dialog.setContentView(R.layout.dialog_layout_autostart);
-        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-
-        TextView deny = dialog.findViewById(R.id.tv_deny);
-        TextView allow = dialog.findViewById(R.id.tv_allow);
-
-        deny.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(OperationsMainActivity.this, getString(R.string.permission_required), Toast.LENGTH_SHORT).show();
-            }
-        });
-        allow.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                intent.addCategory(Intent.CATEGORY_DEFAULT);
-                intent.setData(Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-
-                PrefData.writeBooleanPref(PrefData.autostartup, true);
-                dialog.dismiss();
-
-            }
-        });
-        dialog.show();
-    }
-
     private void initialize() {
         progressView = new ProgressView(OperationsMainActivity.this);
-        progressView.showLoader();
         setSupportActionBar(toolbar);
         tvTitle.setVisibility(View.VISIBLE);
         tvTitle.setText(getString(R.string.home_caps));
@@ -281,6 +268,18 @@ public class OperationsMainActivity extends AppCompatActivity implements
         Picasso.get().load(Utils.BASE_IMAGE_COMPANY + PrefData.readStringPref(PrefData.company_logo)).placeholder(R.drawable.progress_animation).into(drawerProfile);
         Picasso.get().load(Utils.BASE_IMAGE_COMPANY + PrefData.readStringPref(PrefData.company_logo)).placeholder(R.drawable.progress_animation).into(ivCompanyLogo);
 
+        if (PrefData.readStringPref(PrefData.last_checkin_operations).equalsIgnoreCase("")) {
+            tvLastCheckin.setText("Last Check-In:\n" + "0");
+        } else {
+            tvLastCheckin.setText("Last Check-In:\n" + PrefData.readStringPref(PrefData.last_checkin_operations));
+        }
+
+        if (PrefData.readStringPref(PrefData.total_scan_count_operations).equalsIgnoreCase("")) {
+            tvTotalQrScan.setText("Total Scan:\n" + "0");
+        } else {
+            tvTotalQrScan.setText("Total Scan:\n" + PrefData.readStringPref(PrefData.total_scan_count_operations));
+        }
+
         prefData = new PrefData(OperationsMainActivity.this);
         apiInterface = ApiClient.getClient(OperationsMainActivity.this).create(ApiInterface.class);
         qrScanOperations = new IntentIntegrator(OperationsMainActivity.this);
@@ -289,6 +288,9 @@ public class OperationsMainActivity extends AppCompatActivity implements
         btnSubmitComments.setOnClickListener(this);
         tvAttachImage.setOnClickListener(this);
         fabScan.setOnClickListener(this);
+        tvViewNotice.setOnClickListener(this);
+        tvSos.setOnClickListener(this);
+        tvViewNotice.setSelected(true);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             pictureService = PictureCapturingServiceImpl.getInstance(this);
@@ -350,6 +352,37 @@ public class OperationsMainActivity extends AppCompatActivity implements
         mi.setTitle(mNewTitle);
     }
 
+    private void showDialogToAskForAutoStartUp() {
+        final Dialog dialog = new Dialog(OperationsMainActivity.this);
+        dialog.setCancelable(false);
+        dialog.setContentView(R.layout.dialog_layout_autostart);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        TextView deny = dialog.findViewById(R.id.tv_deny);
+        TextView allow = dialog.findViewById(R.id.tv_allow);
+
+        deny.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.permission_required), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+            }
+        });
+        allow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.addCategory(Intent.CATEGORY_DEFAULT);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+
+                PrefData.writeBooleanPref(PrefData.autostartup, true);
+                dialog.dismiss();
+
+            }
+        });
+        dialog.show();
+    }
+
     private void connectApiToFetchProfileDetails() {
         if (CheckNetworkConnection.isConnection1(OperationsMainActivity.this, true)) {
             Call<ApiResponse> call = apiInterface.Profile(PrefData.readStringPref(PrefData.security_token));
@@ -357,125 +390,120 @@ public class OperationsMainActivity extends AppCompatActivity implements
                 @Override
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     try {
-
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-
-                            tvCompanyName.setText(PrefData.readStringPref(PrefData.company_name));
-                            PrefData.writeStringPref(PrefData.employee_name, response.body().getData().get(0).getName());
-                            PrefData.writeStringPref(PrefData.employee_type, response.body().getType());
-                            PrefData.writeStringPref(PrefData.employee_id, String.valueOf(response.body().getData().get(0).getEmployeeId()));
-
-                            tvName.setText("Welcome " + " " + response.body().getData().get(0).getName());
-                            tvEmpId.setText(response.body().getData().get(0).getEmpCode());
-                            tvEmpType.setText(PrefData.readStringPref(PrefData.employee_type));
-
-                            connectApiToFetchPartialDetails();
-
-                        } else {
-                            Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                tvCompanyName.setText(PrefData.readStringPref(PrefData.company_name));
+                                PrefData.writeStringPref(PrefData.employee_name, response.body().getData().get(0).getName());
+                                PrefData.writeStringPref(PrefData.employee_type, response.body().getType());
+                                PrefData.writeStringPref(PrefData.employee_id, String.valueOf(response.body().getData().get(0).getEmployeeId()));
+                                tvName.setText("Welcome " + " " + response.body().getData().get(0).getName());
+                                tvEmpId.setText(response.body().getData().get(0).getEmpCode());
+                                tvEmpType.setText(PrefData.readStringPref(PrefData.employee_type));
+                                connectApiToFetchPartialDetails();
+                            } else {
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(OperationsMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
+                            }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
                 }
+
                 @Override
                 public void onFailure(Call<ApiResponse> call, Throwable t) {
                     t.printStackTrace();
                 }
             });
-        }else{
-            progressView.hideLoader();
         }
     }
 
     private void connectApiToFetchPartialDetails() {
         if (CheckNetworkConnection.isConnection1(OperationsMainActivity.this, true)) {
+            progressView.showLoader();
             Call<ApiResponse> call = apiInterface.operationalPartial(
                     PrefData.readStringPref(PrefData.security_token)
             );
-
             call.enqueue(new Callback<ApiResponse>() {
                 @Override
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     progressView.hideLoader();
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                notice = response.body().getNotice();
+                                if (response.body().isIsCheckedIn()) {
+                                    btnCheckin.setText(getString(R.string.checkout));
+                                    btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_red));
+                                    cardViewComments.setVisibility(View.VISIBLE);
+                                    fabScan.setVisibility(View.VISIBLE);
+                                    isConveyanceAsked = response.body().isIsConveyanceAsked();
+                                    isLiveTrackingEnabled = response.body().isIsLiveTracking();
+                                    etCheckinMsg.setText("");
+                                    tiCheckinMsg.setVisibility(View.GONE);
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            if (response.body().isIsCheckedIn()) {
-                                btnCheckin.setText(getString(R.string.checkout));
-                                btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_red));
-                                cardViewComments.setVisibility(View.VISIBLE);
-                                fabScan.setVisibility(View.VISIBLE);
-                                isConveyanceAsked = response.body().isIsConveyanceAsked();
-                                isLiveTrackingEnabled = response.body().isIsLiveTracking();
-                                etCheckinMsg.setText("");
-                                tiCheckinMsg.setVisibility(View.GONE);
 
+                                    if (isLiveTrackingEnabled) {
+                                        scheduleServiceForTracking();
+                                    }
 
-                                if (isLiveTrackingEnabled) {
-                                    scheduleServiceForTracking();
-                                }
-
-                            } else {
-                                btnCheckin.setText(getString(R.string.check_in));
-                                btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_green));
-                                etCheckinMsg.setText("");
-                                tiCheckinMsg.setVisibility(View.VISIBLE);
-                                fabScan.setVisibility(View.GONE);
-
-                                if (deviceName.equalsIgnoreCase("Micromax") || deviceName.equalsIgnoreCase("Nokia") || deviceName.equalsIgnoreCase("Samsung") || deviceName.equalsIgnoreCase("Motorola")) {
-                                    //Do Nothing
-                                    //Toast.makeText(OperationsMainActivity.this, "Great Manu???", Toast.LENGTH_SHORT).show();
                                 } else {
-                                    if (response.body().isIsLiveTracking()) {
-                                        Log.e("liveTracking", "LiveTrackingEnabled");
-                                        if (!PrefData.readBooleanPref(PrefData.autostartup)) {
-                                            Log.e("liveTrackingInner", "AutostartupNeverCalled");
-                                            showDialogToAskForAutoStartUp();
+                                    btnCheckin.setText(getString(R.string.check_in));
+                                    btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_green));
+                                    etCheckinMsg.setText("");
+                                    tiCheckinMsg.setVisibility(View.VISIBLE);
+                                    fabScan.setVisibility(View.GONE);
+
+                                    if (deviceName.equalsIgnoreCase("Micromax") || deviceName.equalsIgnoreCase("Nokia") || deviceName.equalsIgnoreCase("Samsung") || deviceName.equalsIgnoreCase("Motorola")) {
+                                        //Do Nothing
+                                        //Toast.makeText(OperationsMainActivity.this, "Great Manu???", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        if (response.body().isIsLiveTracking()) {
+                                            Log.e("liveTracking", "LiveTrackingEnabled");
+                                            if (!PrefData.readBooleanPref(PrefData.autostartup)) {
+                                                Log.e("liveTrackingInner", "AutostartupNeverCalled");
+                                                showDialogToAskForAutoStartUp();
+                                            }
                                         }
                                     }
                                 }
-
-                            }
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-
-                                if (Utils.isMyServiceRunning(LiveTrackingForOperations.class, OperationsMainActivity.this)) {
-                                    stopServiceForTracking();
-                                }
-
-                                Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(OperationsMainActivity.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    if (Utils.isMyServiceRunning(LiveTrackingForOperations.class, OperationsMainActivity.this)) {
+                                        stopServiceForTracking();
+                                    }
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(OperationsMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
-
                 }
 
                 @Override
@@ -522,13 +550,13 @@ public class OperationsMainActivity extends AppCompatActivity implements
 
                 commentText = etComment.getText().toString();
 
-                if (commentText.equalsIgnoreCase("") && commentImagePath.equalsIgnoreCase("")) {
-                    Toast.makeText(this, R.string.write_comment, Toast.LENGTH_SHORT).show();
-                } else if (!commentText.equalsIgnoreCase("") && commentImagePath.equalsIgnoreCase("")) {
+                if (commentText.equalsIgnoreCase("") && pictureFilePathComment.equalsIgnoreCase("")) {
+                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.write_comment), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                } else if (!commentText.equalsIgnoreCase("") && pictureFilePathComment.equalsIgnoreCase("")) {
                     commentType = "TEXT";
-                } else if (commentText.equalsIgnoreCase("") && !commentImagePath.equalsIgnoreCase("")) {
+                } else if (commentText.equalsIgnoreCase("") && !pictureFilePathComment.equalsIgnoreCase("")) {
                     commentType = "IMAGE";
-                } else if (!commentText.equalsIgnoreCase("") && !commentImagePath.equalsIgnoreCase("")) {
+                } else if (!commentText.equalsIgnoreCase("") && !pictureFilePathComment.equalsIgnoreCase("")) {
                     commentType = "BOTH";
                 }
 
@@ -541,16 +569,112 @@ public class OperationsMainActivity extends AppCompatActivity implements
                 if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
                     sendTakePictureIntentForComment();
                 } else {
-                    Toast.makeText(this, "Your Phone doesn\'t have camera", Toast.LENGTH_SHORT).show();
+                    Utils.showToast(OperationsMainActivity.this, "Your Phone doesn\'t have camera", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 }
                 break;
             case R.id.fab_scan:
-                isSpyImageTaken=false;
-                qrScanOperations.setOrientationLocked(true);
-                qrScanOperations.initiateScan();
+                isSpyImageTaken = false;
+                isSpyImageFound = false;
+                progressView.showLoader();
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        pictureService.startCapturing(OperationsMainActivity.this);
+                    }
+                }, 200);
+                break;
+            case R.id.tv_view_notice:
+                openDialogToShowNotice();
+                break;
+
+            case R.id.tv_sos:
+                connectApiToCallSOS();
                 break;
 
         }
+    }
+
+    private void connectApiToCallSOS() {
+        if (CheckNetworkConnection.isConnection1(OperationsMainActivity.this, true)) {
+            progressView.showLoader();
+
+            Call<ApiResponse> call = apiInterface.sos(PrefData.readStringPref(PrefData.security_token));
+
+            call.enqueue(new Callback<ApiResponse>() {
+                @Override
+                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                    progressView.hideLoader();
+
+                    try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase("success")) {
+
+                                Utils.showToast(OperationsMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+
+                            } else {
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        if (response.code() == 400) {
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 500) {
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 404) {
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else {
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        }
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse> call, Throwable t) {
+                    progressView.hideLoader();
+                    t.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private void openDialogToShowNotice() {
+        final Dialog dialog = new Dialog(this);
+        dialog.setCancelable(false);
+        dialog.setContentView(R.layout.dialog_show_notice);
+
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int width = displaymetrics.widthPixels;
+        int height = (int) (displaymetrics.heightPixels * 0.8);
+        dialog.getWindow().setLayout(width, height);
+
+        MyButton done;
+        MyTextview tvNotice;
+
+        done = dialog.findViewById(R.id.btn_dialog_done);
+        tvNotice = dialog.findViewById(R.id.tv_notice);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            tvNotice.setText(Html.fromHtml(notice, Html.FROM_HTML_MODE_COMPACT));
+        } else {
+            tvNotice.setText(Html.fromHtml(notice));
+        }
+
+        done.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
     }
 
     private void connectApiToComment(String commType) {
@@ -586,38 +710,36 @@ public class OperationsMainActivity extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.posted_sucessfully), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                etComment.setText("");
+                                tvAttachImage.setImageResource(R.drawable.ic_add_camera);
+                                commentType = "";
+                                commentText = "";
+                                pictureFilePathComment = "";
 
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                            Toast.makeText(OperationsMainActivity.this, R.string.posted_sucessfully, Toast.LENGTH_SHORT).show();
-                            etComment.setText("");
-                            commentType = "";
-                            tvAttachImage.setImageResource(R.drawable.ic_add_box_black_24dp);
-                            commentImagePath = "";
-
-                        } else {
-
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(OperationsMainActivity.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(OperationsMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
-
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
                     }
-
                 }
 
                 @Override
@@ -634,12 +756,11 @@ public class OperationsMainActivity extends AppCompatActivity implements
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
             sendTakePictureIntentForCheckin();
         } else {
-            Toast.makeText(this, "Your Phone doesn\'t have camera", Toast.LENGTH_SHORT).show();
+            Utils.showToast(OperationsMainActivity.this, "Your Phone doesn\'t have camera", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
         }
     }
 
     private void sendTakePictureIntentForCheckin() {
-
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         File pictureFile = null;
         try {
@@ -648,10 +769,11 @@ public class OperationsMainActivity extends AppCompatActivity implements
                 Uri photoURI = FileProvider.getUriForFile(this, "com.trackkers.tmark.fileprovider", pictureFile);
                 cameraIntent.putExtra(MediaStore.EXTRA_FINISH_ON_COMPLETION, true);
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                cameraIntent.putExtra("android.intent.extras.CAMERA_FACING", 1);
                 startActivityForResult(cameraIntent, REQUEST_CODE_FOR_FRONT_CAMERA);
             }
         } catch (IOException ex) {
-            Toast.makeText(this, "Photo file can't be created, please try again", Toast.LENGTH_SHORT).show();
+            Utils.showToast(OperationsMainActivity.this, "Photo file can't be created, please try again", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
         }
     }
 
@@ -667,28 +789,56 @@ public class OperationsMainActivity extends AppCompatActivity implements
                 startActivityForResult(intent, REQUEST_CODE_FOR_BACK_CAMERA);
             }
         } catch (IOException ex) {
-            Toast.makeText(this, "Photo file can't be created, please try again", Toast.LENGTH_SHORT).show();
+            Utils.showToast(OperationsMainActivity.this, "Photo file can't be created, please try again", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void rotateBitmap(Bitmap bitmap, String filePath, File fileName) {
+
+        ExifInterface exifInterface = null;
+        try {
+            exifInterface = new ExifInterface(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        int orientation = 0;
+        if (exifInterface != null) {
+            orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+        }
+        Matrix matrix = new Matrix();
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.setRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.setRotate(180);
+                break;
+            default:
+        }
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        try {
+            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(fileName));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
     }
 
     private File getPictureFileCheckin() throws IOException {
-
         String timeStamp = Utils.currentTimeStamp();
         File storageDir = getExternalFilesDir(null);
         File image = File.createTempFile(timeStamp, ".png", storageDir);
         pictureFilePathCheckin = image.getAbsolutePath();
         return image;
-
     }
 
     private File getPictureFileComment() throws IOException {
-
         String timeStamp = Utils.currentTimeStamp();
         File storageDir = getExternalFilesDir(null);
         File image = File.createTempFile(timeStamp, ".png", storageDir);
         pictureFilePathComment = image.getAbsolutePath();
         return image;
-
     }
 
     private void connectApiToCheckinOperations() {
@@ -725,45 +875,56 @@ public class OperationsMainActivity extends AppCompatActivity implements
                             progressView.hideLoader();
 
                             try {
+                                if (response.body() != null && response.body().getStatus() != null) {
+                                    if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                        Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.checkin_successfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
 
-                                    Toast.makeText(OperationsMainActivity.this, R.string.checkin_successfull, Toast.LENGTH_SHORT).show();
+                                        btnCheckin.setText(getString(R.string.checkout));
+                                        btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_red));
+                                        etCheckinMsg.setText("");
+                                        tiCheckinMsg.setVisibility(View.GONE);
+                                        fabScan.setVisibility(View.VISIBLE);
+                                        isConveyanceAsked = response.body().isIsConveyanceAsked();
+                                        isLiveTrackingEnabled = response.body().isIsLiveTracking();
 
-                                    btnCheckin.setText(getString(R.string.checkout));
-                                    btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_red));
-                                    etCheckinMsg.setText("");
-                                    tiCheckinMsg.setVisibility(View.GONE);
-                                    fabScan.setVisibility(View.VISIBLE);
-                                    isConveyanceAsked = response.body().isIsConveyanceAsked();
-                                    isLiveTrackingEnabled = response.body().isIsLiveTracking();
+                                        if (isLiveTrackingEnabled) {
+                                            scheduleServiceForTracking();
+                                        }
 
-                                    if (isLiveTrackingEnabled) {
-                                        scheduleServiceForTracking();
-                                    }
+                                        if (PrefData.readStringPref(PrefData.last_checkin_operations).equalsIgnoreCase("")) {
+                                            currentDateAndTime = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
+                                            PrefData.writeStringPref(PrefData.last_checkin_operations, currentDateAndTime);
+                                            tvLastCheckin.setText("Last Check-In:\n" + PrefData.readStringPref(PrefData.last_checkin_operations));
 
-                                    openDialogForSuccessfullCheckin();
+                                        } else {
+                                            currentDateAndTime = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
+                                            PrefData.writeStringPref(PrefData.last_checkin_operations, currentDateAndTime);
 
-                                } else {
+                                            tvLastCheckin.setText("Last Check-In:\n" + PrefData.readStringPref(PrefData.last_checkin_operations));
+                                        }
 
-                                    if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                        Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                        Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+
+                                        openDialogForSuccessfullCheckin();
+
                                     } else {
-                                        Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                        if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                            Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                        } else {
+                                            Utils.showToast(OperationsMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                        }
                                     }
-
                                 }
-
                             } catch (Exception e) {
                                 if (response.code() == 400) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 500) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 404) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 }
                                 e.printStackTrace();
                             }
@@ -772,12 +933,12 @@ public class OperationsMainActivity extends AppCompatActivity implements
                         @Override
                         public void onFailure(Call<ApiResponse> call, Throwable t) {
                             progressView.hideLoader();
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.location_not_detected), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.location_not_detected), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                             t.printStackTrace();
                         }
                     });
                 }
-            }, 500);
+            }, 200);
         }
     }
 
@@ -840,10 +1001,9 @@ public class OperationsMainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v) {
                 if (distance.getText().toString().equalsIgnoreCase("")) {
-                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.fill_distance), Toast.LENGTH_SHORT).show();
-
+                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.fill_distance), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else if (fare.getText().toString().equalsIgnoreCase("")) {
-                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.fill_fare), Toast.LENGTH_SHORT).show();
+                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.fill_fare), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else {
                     connectApiToconveyanceDeetails(distance.getText().toString(), fare.getText().toString());
                 }
@@ -868,39 +1028,40 @@ public class OperationsMainActivity extends AppCompatActivity implements
                     progressView.hideLoader();
 
                     try {
-                        if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                            dialog.dismiss();
-                            connectApiToCheckoutOperations();
+                                dialog.dismiss();
+                                connectApiToCheckoutOperations();
 
-                        } else {
-                            if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-
-                                if (Utils.isMyServiceRunning(LiveTrackingForOperations.class, OperationsMainActivity.this)) {
-                                    stopServiceForTracking();
-                                }
-
-                                Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                Utils.logout(OperationsMainActivity.this, LoginActivity.class);
                             } else {
-                                Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+
+                                    if (Utils.isMyServiceRunning(LiveTrackingForOperations.class, OperationsMainActivity.this)) {
+                                        stopServiceForTracking();
+                                    }
+
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showToast(OperationsMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                }
                             }
                         }
-
                     } catch (Exception e) {
                         if (response.code() == 400) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 500) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else if (response.code() == 404) {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         } else {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                         e.printStackTrace();
-
                     }
                 }
+
                 @Override
                 public void onFailure(Call<ApiResponse> call, Throwable t) {
                     progressView.hideLoader();
@@ -935,47 +1096,40 @@ public class OperationsMainActivity extends AppCompatActivity implements
                             progressView.hideLoader();
 
                             try {
+                                if (response.body() != null && response.body().getStatus() != null) {
+                                    if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
 
-                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                        Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.checkout_sucessfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
 
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.checkout_sucessfull), Toast.LENGTH_SHORT).show();
-
-                                    btnCheckin.setText(getResources().getString(R.string.checkin));
-                                    etCheckinMsg.setText("");
-                                    btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_green));
-                                    tiCheckinMsg.setVisibility(View.VISIBLE);
-                                    cardViewComments.setVisibility(View.GONE);
-                                    fabScan.setVisibility(View.GONE);
-
-                                    stopServiceForTracking();
-                                    //settingsForReleaseCPUUsage();
-
-                                } else {
-
-                                    if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
-                                        Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG).show();
-                                        Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                        btnCheckin.setText(getResources().getString(R.string.checkin));
+                                        etCheckinMsg.setText("");
+                                        btnCheckin.setBackground(getResources().getDrawable(R.drawable.gradient_circle_operations_green));
+                                        tiCheckinMsg.setVisibility(View.VISIBLE);
+                                        cardViewComments.setVisibility(View.GONE);
+                                        fabScan.setVisibility(View.GONE);
+                                        stopServiceForTracking();
+                                        //settingsForReleaseCPUUsage();
                                     } else {
-                                        Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                        if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                            Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                        } else {
+                                            Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                        }
                                     }
-
-
                                 }
-
                             } catch (Exception e) {
                                 if (response.code() == 400) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 500) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 404) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 }
                                 e.printStackTrace();
-
                             }
-
                         }
 
                         @Override
@@ -985,7 +1139,7 @@ public class OperationsMainActivity extends AppCompatActivity implements
                         }
                     });
                 }
-            }, 500);
+            }, 200);
         }
     }
 
@@ -1058,7 +1212,7 @@ public class OperationsMainActivity extends AppCompatActivity implements
         try {
             startActivity(myAppLinkToMarket);
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, getResources().getString(R.string.unable_to_find), Toast.LENGTH_LONG).show();
+            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.unable_to_find), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
         }
     }
 
@@ -1085,32 +1239,31 @@ public class OperationsMainActivity extends AppCompatActivity implements
                         public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                             progressView.hideLoader();
                             try {
-
-                                if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.logout_sucessfull), Toast.LENGTH_SHORT).show();
-
-                                    logout();
-
-                                } else {
-                                    Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                if (response.body() != null && response.body().getStatus() != null) {
+                                    if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                        Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.checkout_sucessfull), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+                                        logout();
+                                    } else {
+                                        if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                            Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                        } else {
+                                            Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                        }
+                                    }
                                 }
-
                             } catch (Exception e) {
                                 if (response.code() == 400) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 500) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else if (response.code() == 404) {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 } else {
-                                    Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                                 }
                                 e.printStackTrace();
-
                             }
-
-
                         }
 
                         @Override
@@ -1120,20 +1273,20 @@ public class OperationsMainActivity extends AppCompatActivity implements
                         }
                     });
                 }
-            }, 500);
+            }, 200);
         }
     }
 
     private void logout() {
         PrefData.writeBooleanPref(PrefData.PREF_LOGINSTATUS, false);
+        PrefData.writeStringPref(PrefData.last_checkin_operations, "");
+        PrefData.writeStringPref(PrefData.total_scan_count_operations, "");
 
         Intent intent = new Intent(OperationsMainActivity.this, LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
         startActivity(intent);
-        finish();
     }
 
     @Override
@@ -1147,7 +1300,7 @@ public class OperationsMainActivity extends AppCompatActivity implements
                     buildGoogleApiClient();
                 }
             } else if (grantResults[0] == PackageManager.PERMISSION_DENIED || grantResults[1] == PackageManager.PERMISSION_DENIED || grantResults[2] == PackageManager.PERMISSION_DENIED) {
-                Toast.makeText(OperationsMainActivity.this, R.string.sorry_cant_use, Toast.LENGTH_LONG).show();
+                Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.sorry_cant_use), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 startRequestPermission();
             }
         }
@@ -1216,13 +1369,13 @@ public class OperationsMainActivity extends AppCompatActivity implements
                             Log.e("lastCurrentLatitude", String.valueOf(currentLatitude));
                             Log.e("lastCurrentLongitude", String.valueOf(currentLongitude));
                         } else {
-                            Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.location_not_detected), Toast.LENGTH_SHORT).show();
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.location_not_detected), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                         }
                     }
                 }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.exact_location_not_detected), Toast.LENGTH_SHORT).show();
+                Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.exact_location_not_detected), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         });
     }
@@ -1277,7 +1430,8 @@ public class OperationsMainActivity extends AppCompatActivity implements
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (result != null) {
             if (result.getContents() == null) {
-                Toast.makeText(this, getResources().getString(R.string.result_not_found), Toast.LENGTH_SHORT).show();
+                progressView.hideLoader();
+                Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.result_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             } else {
                 try {
                     JSONObject jObj = new JSONObject(result.getContents());
@@ -1288,10 +1442,11 @@ public class OperationsMainActivity extends AppCompatActivity implements
                 }
 
                 if (scannedCheckpointId.equalsIgnoreCase("") && scannedCheckpointType.equalsIgnoreCase("")) {
-                    Toast.makeText(this, "Wrong Qr Code Scanned", Toast.LENGTH_LONG).show();
+                    progressView.hideLoader();
+                    Utils.showToast(OperationsMainActivity.this, "Wrong Qr Code Scanned", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
                 } else {
                     progressView.showLoader();
-                    pictureService.startCapturing(this);
+                    connectApiToScanQrCodeOperations(scannedCheckpointId, scannedCheckpointType, isSpyImageFound);
                 }
             }
         }
@@ -1315,106 +1470,126 @@ public class OperationsMainActivity extends AppCompatActivity implements
             if (resultCode == Activity.RESULT_OK) {
 
                 file = new File(pictureFilePathCheckin);
-
-                try {
-                    Bitmap bitmap = BitmapFactory.decodeFile(file.getPath());
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(file));
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                Bitmap bitmap = BitmapFactory.decodeFile(file.getPath());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    rotateBitmap(bitmap, file.getPath(), file);
+                } else {
+                    try {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(file));
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 connectApiToCheckinOperations();
 
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                //Toast.makeText(this, R.string.camera_closed, Toast.LENGTH_SHORT).show();
+                //Utils.showToast(OperationsMainActivity.this, "Camera Closed", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
         } else if (requestCode == REQUEST_CODE_FOR_BACK_CAMERA) {
             if (resultCode == Activity.RESULT_OK) {
 
                 commentFile = new File(pictureFilePathComment);
-
-                try {
-                    Bitmap bitmap = BitmapFactory.decodeFile(commentFile.getPath());
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(commentFile));
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                Bitmap bitmap = BitmapFactory.decodeFile(commentFile.getPath());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    rotateBitmap(bitmap, commentFile.getPath(), commentFile);
+                } else {
+                    try {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 15, new FileOutputStream(commentFile));
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 Bitmap myBitmap = BitmapFactory.decodeFile(commentFile.getAbsolutePath());
                 tvAttachImage.setImageBitmap(myBitmap);
-
+            } else {
+                commentType = "";
+                commentText = "";
+                pictureFilePathComment = "";
+                Utils.showToast(OperationsMainActivity.this, "Camera CLosed", Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
             }
-        } else {
-            Toast.makeText(this, "Camera Closed", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void connectApiToScanQrCodeOperations(String scannedCheckpointId, String scannedCheckpointType,boolean isFilePresent) {
+    private void connectApiToScanQrCodeOperations(String scannedCheckpointId, String scannedCheckpointType, boolean isFilePresent) {
         if (CheckNetworkConnection.isConnection1(OperationsMainActivity.this, true)) {
 
             if (String.valueOf(currentLatitude).equalsIgnoreCase("0.0") && String.valueOf(currentLongitude).equalsIgnoreCase("0.0")) {
                 getLastKnownLocation();
-            } else {
+            }
 
-                MultipartBody.Part filePart = null;
-                if (isFilePresent) {
-                    filePart = MultipartBody.Part.createFormData("image", spyFile.getName(), RequestBody.create(MediaType.parse("image/*"), spyFile));
-                } else {
-                    filePart = MultipartBody.Part.createFormData("image", "", RequestBody.create(MediaType.parse("text/plain"), ""));
+            MultipartBody.Part filePart = null;
+            if (isFilePresent) {
+                filePart = MultipartBody.Part.createFormData("image", spyFile.getName(), RequestBody.create(MediaType.parse("image/*"), spyFile));
+            } else {
+                filePart = MultipartBody.Part.createFormData("image", "", RequestBody.create(MediaType.parse("text/plain"), ""));
+            }
+
+            RequestBody token = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.security_token));
+            RequestBody checkpointType = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointType);
+            RequestBody checkpointId = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointId);
+            RequestBody latitude = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(currentLatitude));
+            RequestBody longitude = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(currentLongitude));
+
+            Call<ApiResponse> call = apiInterface.operationVisitByScanQr(
+                    token,
+                    checkpointType,
+                    checkpointId,
+                    latitude,
+                    longitude,
+                    filePart
+            );
+
+            call.enqueue(new Callback<ApiResponse>() {
+                @Override
+                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                    progressView.hideLoader();
+                    try {
+                        if (response.body() != null && response.body().getStatus() != null) {
+                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
+                                Utils.showToast(OperationsMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG, getResources().getColor(R.color.colorLightGreen), getResources().getColor(R.color.colorWhite));
+
+                                if (PrefData.readStringPref(PrefData.total_scan_count_operations).equalsIgnoreCase("")) {
+                                    totalScannedQr++;
+                                    PrefData.writeStringPref(PrefData.total_scan_count_operations, totalScannedQr + "");
+                                    tvTotalQrScan.setText("Total Scan:\n" + PrefData.readStringPref(PrefData.total_scan_count_operations));
+                                } else {
+                                    totalScannedQr = Integer.parseInt(PrefData.readStringPref(PrefData.total_scan_count_operations));
+                                    totalScannedQr++;
+                                    PrefData.writeStringPref(PrefData.total_scan_count_operations, totalScannedQr + "");
+                                    tvTotalQrScan.setText("Total Scan:\n" + PrefData.readStringPref(PrefData.total_scan_count_operations));
+                                }
+                            } else {
+                                if (response.body().getMsg().toLowerCase().equalsIgnoreCase("invalid token")) {
+                                    Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.login_session_expired), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                                    Utils.logout(OperationsMainActivity.this, LoginActivity.class);
+                                } else {
+                                    Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        if (response.code() == 400) {
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 500) {
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else if (response.code() == 404) {
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        } else {
+                            Utils.showToast(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_LONG, getResources().getColor(R.color.colorPink), getResources().getColor(R.color.colorWhite));
+                        }
+                        e.printStackTrace();
+                    }
                 }
 
-                RequestBody token = RequestBody.create(MediaType.parse("text/plain"), PrefData.readStringPref(PrefData.security_token));
-                RequestBody checkpointType = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointType);
-                RequestBody checkpointId = RequestBody.create(MediaType.parse("text/plain"), scannedCheckpointId);
-                RequestBody latitude = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(currentLatitude));
-                RequestBody longitude = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(currentLongitude));
+                @Override
+                public void onFailure(Call<ApiResponse> call, Throwable t) {
+                    progressView.hideLoader();
+                    t.printStackTrace();
+                }
+            });
 
-
-                Call<ApiResponse> call = apiInterface.operationVisitByScanQr(
-                        token,
-                        checkpointType,
-                        checkpointId,
-                        latitude,
-                        longitude,
-                        filePart
-                );
-
-                call.enqueue(new Callback<ApiResponse>() {
-                    @Override
-                    public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
-                        progressView.hideLoader();
-                        try {
-
-                            if (response.body().getStatus().equalsIgnoreCase(getString(R.string.success))) {
-                                Toast.makeText(OperationsMainActivity.this, response.body().getMsg(), Toast.LENGTH_LONG).show();
-                            } else {
-                                Utils.showSnackBar(drawerLayout, response.body().getMsg(), OperationsMainActivity.this);
-                            }
-
-                        } catch (Exception e) {
-                            if (response.code() == 400) {
-                                Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.bad_request), Toast.LENGTH_SHORT).show();
-                            } else if (response.code() == 500) {
-                                Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
-                            } else if (response.code() == 404) {
-                                Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.resource_not_found), Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(OperationsMainActivity.this, getResources().getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show();
-                            }
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<ApiResponse> call, Throwable t) {
-                        progressView.hideLoader();
-                        t.printStackTrace();
-                    }
-                });
-
-            }
         }
     }
 
@@ -1447,28 +1622,36 @@ public class OperationsMainActivity extends AppCompatActivity implements
 
     @Override
     public void onCaptureDone(String pictureUrl, byte[] pictureData) {
-        if (!isSpyImageTaken){
+        if (!isSpyImageTaken) {
             if (pictureData != null && pictureUrl != null) {
-                spyFile=new File(pictureUrl);
-                connectApiToScanQrCodeOperations(scannedCheckpointId, scannedCheckpointType,true);
-                isSpyImageTaken=true;
+                spyFile = new File(pictureUrl);
+                qrScanOperations.setOrientationLocked(true);
+                qrScanOperations.initiateScan();
+                isSpyImageTaken = true;
+                isSpyImageFound = true;
             } else {
-                connectApiToScanQrCodeOperations(scannedCheckpointId, scannedCheckpointType,false);
-                isSpyImageTaken=true;
+                qrScanOperations.setOrientationLocked(true);
+                qrScanOperations.initiateScan();
+                isSpyImageTaken = true;
+                isSpyImageFound = false;
             }
         }
     }
 
     @Override
     public void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken) {
-        if (!isSpyImageTaken){
+        if (!isSpyImageTaken) {
             if (picturesTaken != null && !picturesTaken.isEmpty()) {
-                spyFile=new File(picturesTaken.lastEntry().getKey());
-                connectApiToScanQrCodeOperations(scannedCheckpointId, scannedCheckpointType,true);
-                isSpyImageTaken=true;
-            } else{
-                connectApiToScanQrCodeOperations(scannedCheckpointId, scannedCheckpointType,false);
-                isSpyImageTaken=true;
+                spyFile = new File(picturesTaken.lastEntry().getKey());
+                qrScanOperations.setOrientationLocked(true);
+                qrScanOperations.initiateScan();
+                isSpyImageTaken = true;
+                isSpyImageFound = true;
+            } else {
+                qrScanOperations.setOrientationLocked(true);
+                qrScanOperations.initiateScan();
+                isSpyImageTaken = true;
+                isSpyImageFound = false;
             }
         }
     }
